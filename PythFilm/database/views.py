@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Phim
 from .forms import PhimForm
 from django.shortcuts import render
+from django.http import HttpResponse
 
 def home(request):
     return render(request, 'home.html')  # Render a home page template
@@ -456,3 +457,35 @@ def xoa_binh_luan(request, id):
         binh_luan.delete()
         return redirect('danh_sach_binh_luan')
     return render(request, 'base/xoa_binh_luan.html', {'binh_luan': binh_luan})
+
+
+#register
+def register(request):
+    if request.method == 'POST':
+        form = NguoiDungForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect(request, 'user/login.html')
+    else:
+        form = NguoiDungForm()
+
+    return render(request, 'user/register.html', {'form': form})
+
+def success(request):
+    return HttpResponse("Đăng ký thành công!")
+
+#login
+from django.contrib import messages
+from django.contrib.auth import authenticate, login
+def user_login(request):
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('home.html')
+        else:
+            messages.error(request, 'Tài khoản hoặc mật khẩu không đúng')
+    return render(request, 'user/login.html')

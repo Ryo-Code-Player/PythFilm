@@ -14,6 +14,14 @@ class NguoiDungForm(forms.ModelForm):
             'password': forms.PasswordInput(),  # Hiển thị trường mật khẩu
             'ngay_sinh': forms.DateInput(attrs={'type': 'date', 'placeholder': 'dd/mm/yyyy'})  # Định dạng ngày sinh
         }
+        def clean(self):
+            cleaned_data = super().clean()
+            password = cleaned_data.get('password')
+            password_confirm = cleaned_data.get('password_confirm')
+            
+            if password != password_confirm:
+                raise forms.ValidationError("Mật khẩu và mật khẩu nhập lại không khớp.")
+            return cleaned_data
         
 class TheLoaiForm(forms.ModelForm):
     class Meta:
@@ -87,3 +95,4 @@ class BinhLuanForm(forms.ModelForm):
             'rating': forms.NumberInput(attrs={'min': 1, 'max': 5}),
             'noi_dung': forms.Textarea(attrs={'rows': 3}),
         }
+

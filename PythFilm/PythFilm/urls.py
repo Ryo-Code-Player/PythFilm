@@ -88,5 +88,12 @@ urlpatterns = [
     path('binh-luan/xoa/<int:id>/', views.xoa_binh_luan, name='xoa_binh_luan'),
      
     # Đường dẫn cho Web quản lý bán vé
-    path('', views.quan_ly, name='quan_ly')
+    path('', views.quan_ly, name='quan_ly'),
+
+    #register
+    path('register/', views.register, name='register'),
+    path('success/', views.success, name='success'),
+
+    #login
+    path('login/', views.user_login, name='login'),
 ]
