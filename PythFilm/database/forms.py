@@ -23,6 +23,9 @@ class NguoiDungForm(forms.ModelForm):
                 raise forms.ValidationError("Mật khẩu và mật khẩu nhập lại không khớp.")
             return cleaned_data
         
+class ComboSelectionForm(forms.Form):
+    combo = forms.ModelChoiceField(queryset=Combo.objects.all(), label="Chọn Combo", empty_label="Chọn Combo")
+        
 class TheLoaiForm(forms.ModelForm):
     class Meta:
         model = TheLoai

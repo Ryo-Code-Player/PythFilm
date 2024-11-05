@@ -3,6 +3,7 @@ from .models import Phim
 from .forms import PhimForm
 from django.shortcuts import render
 from django.http import HttpResponse
+from .forms import ComboSelectionForm
 
 def home(request):
     return render(request, 'home.html')  # Render a home page template
@@ -44,6 +45,50 @@ def xoa_phim(request, id):
         return redirect('danh_sach_phim')
     return render(request, 'base/xoa_phim.html', {'phim': phim})
 
+
+#comboselect
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Combo
+from .forms import ComboForm
+# View để thêm combo
+def them_combo(request):
+    if request.method == 'POST':
+        form = ComboForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('danh_sach_combo')  # Đường dẫn đến danh sách combo
+    else:
+        form = ComboForm()
+    return render(request, 'base/them_combo.html', {'form': form})
+
+# View để sửa combo
+def sua_combo(request, id):
+    combo = get_object_or_404(Combo, id=id)
+    if request.method == 'POST':
+        form = ComboForm(request.POST, instance=combo)
+        if form.is_valid():
+            form.save()
+            return redirect('danh_sach_combo')  # Đường dẫn đến danh sách combo
+    else:
+        form = ComboForm(instance=combo)
+    return render(request, 'base/sua_combo.html', {'form': form})
+
+# View để hiển thị danh sách combo
+def danh_sach_combo(request):
+    combos = Combo.objects.all()
+    return render(request, 'base/danh_sach_combo.html', {'combos': combos})
+
+def select_combo(request):
+    if request.method == 'POST':
+        form = ComboSelectionForm(request.POST)
+        if form.is_valid():
+            selected_combo = form.cleaned_data['combo']
+            # Lưu lựa chọn combo vào session hoặc xử lý theo nhu cầu
+            request.session['selected_combo'] = selected_combo.id
+            return redirect('next_step')  # Điều hướng tới bước tiếp theo trong quy trình đặt vé
+    else:
+        form = ComboSelectionForm()
+    return render(request, 'comboselect/select_combo.html', {'form': form})
 
 
 from .models import NguoiDung

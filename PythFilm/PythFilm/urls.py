@@ -96,4 +96,8 @@ urlpatterns = [
 
     #login
     path('login/', views.user_login, name='login'),
+
+
+    #tai
+    path('comboselect/', views.select_combo, name='select_combo'),
 ]
