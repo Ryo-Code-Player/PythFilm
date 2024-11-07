@@ -87,3 +87,15 @@ class BinhLuanForm(forms.ModelForm):
             'rating': forms.NumberInput(attrs={'min': 1, 'max': 5}),
             'noi_dung': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+
+# forms.py
+from django import forms
+from .models import XuatChieu
+
+class XuatChieuFormTuDong(forms.Form):
+    phim = forms.ModelChoiceField(queryset=Phim.objects.all(), label="Phim")
+    rap_chieu = forms.ModelChoiceField(queryset=RapChieu.objects.all(), label="Rạp chiếu")
+    dinh_dang_phim = forms.ModelChoiceField(queryset=DinhDangPhim.objects.all(), label="Định dạng phim")
+    ngay_chieu = forms.DateField(label="Ngày chiếu", widget=forms.DateInput(attrs={'type': 'date'}))

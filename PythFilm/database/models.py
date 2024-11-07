@@ -327,12 +327,12 @@ class TheLoai(models.Model):
 # Bảng Phim (Movie)
 class Phim(models.Model):
     ten_phim = models.CharField(max_length=200)
-    the_loai = models.ManyToManyField(TheLoai)  # Một phim có thể thuộc nhiều thể loại
+    the_loai = models.ManyToManyField('TheLoai')  # Một phim có thể thuộc nhiều thể loại
     dao_dien = models.CharField(max_length=100)
     dien_vien = models.TextField()
     thoi_luong = models.PositiveIntegerField()  # Thời lượng tính bằng phút
     tom_tat = models.TextField()
-    thumbnail = models.CharField(max_length=200)  # Link ảnh thumbnail của phim
+    thumbnail = models.ImageField(upload_to='thumbnails/')  # Đường dẫn lưu ảnh thumbnail
     do_tuoi = models.PositiveIntegerField(validators=[MinValueValidator(0)], default=0)  # Độ tuổi được xem phim
 
     def __str__(self):
@@ -402,3 +402,4 @@ class BinhLuan(models.Model):
 
     def __str__(self):
         return f"Bình luận của {self.user_binh_luan.username} - {self.phim.ten_phim}"
+
