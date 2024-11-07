@@ -21,9 +21,13 @@
         <td>
             <a href="{% url 'sua_xuat_chieu' xuat_chieu.id %}">Sửa</a> | 
             <a href="{% url 'xoa_xuat_chieu' xuat_chieu.id %}">Xóa</a>
+
+
         </td>
     </tr>
     {% endfor %}
 </table>
 <a href="{% url 'them_xuat_chieu' %}">Thêm xuất chiếu mới</a>
+            <!-- Ví dụ thêm link vào trang chính hoặc menu -->
+<a href="{% url 'tao_xuat_chieu' %}">Tạo suất chiếu tự động</a>
 {% endblock %}

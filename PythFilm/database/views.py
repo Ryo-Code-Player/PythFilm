@@ -1,9 +1,9 @@
+
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Phim
 from .forms import PhimForm
+from django.contrib.auth import authenticate
 from django.shortcuts import render
-from django.http import HttpResponse
-from .forms import ComboSelectionForm
 
 def home(request):
     return render(request, 'home.html')  # Render a home page template
@@ -17,7 +17,7 @@ def danh_sach_phim(request):
 # View để thêm phim
 def them_phim(request):
     if request.method == 'POST':
-        form = PhimForm(request.POST)
+        form = PhimForm(request.POST, request.FILES)  # Chấp nhận request.FILES
         if form.is_valid():
             form.save()
             return redirect('danh_sach_phim')
@@ -45,50 +45,6 @@ def xoa_phim(request, id):
         return redirect('danh_sach_phim')
     return render(request, 'base/xoa_phim.html', {'phim': phim})
 
-
-#comboselect
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Combo
-from .forms import ComboForm
-# View để thêm combo
-def them_combo(request):
-    if request.method == 'POST':
-        form = ComboForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('danh_sach_combo')  # Đường dẫn đến danh sách combo
-    else:
-        form = ComboForm()
-    return render(request, 'base/them_combo.html', {'form': form})
-
-# View để sửa combo
-def sua_combo(request, id):
-    combo = get_object_or_404(Combo, id=id)
-    if request.method == 'POST':
-        form = ComboForm(request.POST, instance=combo)
-        if form.is_valid():
-            form.save()
-            return redirect('danh_sach_combo')  # Đường dẫn đến danh sách combo
-    else:
-        form = ComboForm(instance=combo)
-    return render(request, 'base/sua_combo.html', {'form': form})
-
-# View để hiển thị danh sách combo
-def danh_sach_combo(request):
-    combos = Combo.objects.all()
-    return render(request, 'base/danh_sach_combo.html', {'combos': combos})
-
-def select_combo(request):
-    if request.method == 'POST':
-        form = ComboSelectionForm(request.POST)
-        if form.is_valid():
-            selected_combo = form.cleaned_data['combo']
-            # Lưu lựa chọn combo vào session hoặc xử lý theo nhu cầu
-            request.session['selected_combo'] = selected_combo.id
-            return redirect('next_step')  # Điều hướng tới bước tiếp theo trong quy trình đặt vé
-    else:
-        form = ComboSelectionForm()
-    return render(request, 'comboselect/select_combo.html', {'form': form})
 
 
 from .models import NguoiDung
@@ -294,46 +250,6 @@ def xoa_xuat_chieu(request, id):
     return render(request, 'base/xoa_xuat_chieu.html', {'xuat_chieu': xuat_chieu})
 
 
-
-# from .models import Ve, Phim, XuatChieu, NguoiDung
-# from .forms import VeForm
-
-# # View hiển thị danh sách vé
-# def danh_sach_ve(request):
-#     ds_ve = Ve.objects.all()
-#     return render(request, 'base/danh_sach_ve.html', {'ds_ve': ds_ve})
-
-# # View thêm vé
-# def them_ve(request):
-#     if request.method == 'POST':
-#         form = VeForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('danh_sach_ve')
-#     else:
-#         form = VeForm()
-#     return render(request, 'base/them_ve.html', {'form': form})
-
-# # View sửa vé
-# def sua_ve(request, id):
-#     ve = get_object_or_404(Ve, id=id)
-#     if request.method == 'POST':
-#         form = VeForm(request.POST, instance=ve)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('danh_sach_ve')
-#     else:
-#         form = VeForm(instance=ve)
-#     return render(request, 'base/sua_ve.html', {'form': form})
-
-# # View xóa vé
-# def xoa_ve(request, id):
-#     ve = get_object_or_404(Ve, id=id)
-#     if request.method == 'POST':
-#         ve.delete()
-#         return redirect('danh_sach_ve')
-#     return render(request, 'base/xoa_ve.html', {'ve': ve})
-
 #View Quản lý web bán vé
 def quan_ly(request):
     return render(request, 'base/introduce.html')
@@ -504,17 +420,135 @@ def xoa_binh_luan(request, id):
     return render(request, 'base/xoa_binh_luan.html', {'binh_luan': binh_luan})
 
 
+def home(request):
+    return render(request, 'base/headerfooter.html')  # Render a home page template
+from django.shortcuts import render
+from .models import Phim
+
+def index(request):
+    # Lấy 8 bộ phim đầu bảng
+    top_movies = Phim.objects.all()[:8]  # Thay đổi lọc theo yêu cầu của bạn nếu cần
+    phim_sap_chieu = Phim.objects.all().order_by('-id')[:8]  # Sắp xếp theo ID giảm dần để lấy phim mới nhất
+    random_movies = Phim.objects.all().order_by('?')[:8]  # Lấy 8 phim ngẫu nhiên
+    return render(request, 'base/index.html', {'top_movies': top_movies, 'phim_sap_chieu': phim_sap_chieu,'random_movies':random_movies})
+
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from .models import Phim, XuatChieu, RapChieu, DinhDangPhim
+
+def film_detail(request, phim_id):
+    # Lấy đối tượng phim dựa trên ID
+    phim = get_object_or_404(Phim, id=phim_id)
+    
+    # Lấy ngày hôm nay
+    today = timezone.now().date()
+    
+    # Lấy lịch chiếu của phim trong ngày hôm nay
+    showtimes = XuatChieu.objects.filter(phim=phim, thoi_gian_chieu__date=today)
+    
+    # Nhóm lịch chiếu theo rạp và định dạng
+    grouped_showtimes = {}
+    for showtime in showtimes:
+        # Lấy rạp chiếu và định dạng phim của lịch chiếu
+        rap_chieu = showtime.rap_chieu
+        dinh_dang = showtime.dinh_dang_phim
+        
+        # Khởi tạo rạp nếu chưa có trong dictionary
+        if rap_chieu not in grouped_showtimes:
+            grouped_showtimes[rap_chieu] = {}
+        
+        # Khởi tạo danh sách định dạng nếu chưa có trong rạp
+        if dinh_dang not in grouped_showtimes[rap_chieu]:
+            grouped_showtimes[rap_chieu][dinh_dang] = []
+        
+        # Thêm lịch chiếu vào danh sách tương ứng
+        grouped_showtimes[rap_chieu][dinh_dang].append(showtime)
+    
+    context = {
+        'phim': phim,
+        'grouped_showtimes': grouped_showtimes,
+        'today': today,
+    }
+    
+    return render(request, 'base/film_detail.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+# views.py
+from django.shortcuts import render, redirect
+from .forms import XuatChieuFormTuDong
+from .models import XuatChieu, Phim, RapChieu, DinhDangPhim
+from datetime import datetime, timedelta
+
+def tao_xuat_chieu_tu_dong(request):
+    # Các mốc thời gian cố định
+    THOI_GIAN_CHOICES = [
+        "11:00", "13:05", "14:10", "15:10", "15:40", "16:15",
+        "17:15", "17:45", "18:20", "19:00", "19:20", "19:50",
+        "20:10", "20:30", "21:05", "21:25", "21:55", "22:15",
+        "22:35", "23:10"
+    ]
+    
+    if request.method == 'POST':
+        form = XuatChieuFormTuDong(request.POST)
+        if form.is_valid():
+            phim = form.cleaned_data['phim']
+            rap_chieu = form.cleaned_data['rap_chieu']
+            dinh_dang_phim = form.cleaned_data['dinh_dang_phim']
+            ngay_chieu = form.cleaned_data['ngay_chieu']
+            
+            # Tạo các bản ghi suất chiếu với thời gian cố định
+            for thoi_gian in THOI_GIAN_CHOICES:
+                thoi_gian_chieu = datetime.strptime(f"{ngay_chieu} {thoi_gian}", '%Y-%m-%d %H:%M')
+                XuatChieu.objects.create(
+                    phim=phim,
+                    rap_chieu=rap_chieu,
+                    dinh_dang_phim=dinh_dang_phim,
+                    thoi_gian_chieu=thoi_gian_chieu
+                )
+            
+            return redirect('danh_sach_xuat_chieu')  # Chuyển hướng sau khi lưu thành công
+    else:
+        form = XuatChieuForm()
+    
+    return render(request, 'base/xuat_chieu_form.html', {'form': form})
+
 #register
+from .forms import UserForm
+from django.contrib.auth.models import User
 def register(request):
     if request.method == 'POST':
         form = NguoiDungForm(request.POST)
+        
         if form.is_valid():
+            password = form.cleaned_data['password']
+            password_confirm = request.POST.get('password_confirm')
+
+            if password != password_confirm:
+                messages.error(request, "Mật khẩu và mật khẩu nhập lại không khớp!")
+                return redirect('register')
+
             form.save()
-            return redirect(request, 'user/login.html')
+            username = form.cleaned_data['username']
+            user = User.objects.create_user(username=username, password=password)
+
+            messages.success(request, "Đăng ký thành công!")
+            
+            return redirect('login')
+
     else:
         form = NguoiDungForm()
 
-    return render(request, 'user/register.html', {'form': form})
+    return render(request, 'user/register.html', {'form': form, 'form2': form2})
 
 def success(request):
     return HttpResponse("Đăng ký thành công!")
@@ -522,15 +556,26 @@ def success(request):
 #login
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
+
 def user_login(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
 
         user = authenticate(request, username=username, password=password)
+
+        # Nếu xác thực thành công
         if user is not None:
             login(request, user)
-            return redirect('home.html')
+            messages.success(request, "Đăng nhập thành công!")
+            return redirect('index')
+
         else:
-            messages.error(request, 'Tài khoản hoặc mật khẩu không đúng')
+            # Nếu thông tin sai
+            messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng!')
+            return redirect('login')
+
     return render(request, 'user/login.html')
