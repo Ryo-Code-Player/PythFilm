@@ -3,7 +3,7 @@
 {% block content %}
     <h2>Sửa Combo</h2>
 
-    <form method="POST" class="form-management">
+    <form method="POST" class="form-management" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
             {{ form.as_p }}

@@ -229,9 +229,9 @@
                         <div style="padding-right:0" class="col-lg-10 col-md-9 col-sm-12">
                             <div class="clearfix" style="clear:both"></div>
                             {% for showtime in showtimes %}
-                            <a href="https://starlight.vn/dat-ve.html?film_name={{ phim.ten_phim|urlencode }}&amp;time_id={{ showtime.id }}&amp;date={{ today }}&amp;format={{ dinh_dang.ten_dinh_dang }}&amp;room=03&amp;image={{ phim.thumbnail.url }}&amp;time={{ showtime.thoi_gian_chieu|date:'H:i' }}&amp;server_id=1" style="display: inline-flex;margin-bottom: 3px;">
+                            <a href="{% url 'seat_selection' phim.id showtime.id %}" style="display: inline-flex;margin-bottom: 3px;">
                                 <span class="time item">{{ showtime.thoi_gian_chieu|date:'H:i' }}</span>
-                            </a>
+                            </a>                            
                             {% endfor %}
                         </div>
                     </div>

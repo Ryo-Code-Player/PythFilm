@@ -56,7 +56,7 @@ def danh_sach_nguoi_dung(request):
 # View để thêm người dùng
 def them_nguoi_dung(request):
     if request.method == 'POST':
-        form = NguoiDungForm(request.POST)
+        form = NguoiDungForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             return redirect('danh_sach_nguoi_dung')
@@ -68,7 +68,7 @@ def them_nguoi_dung(request):
 def sua_nguoi_dung(request, id):
     nguoi_dung = get_object_or_404(NguoiDung, id=id)
     if request.method == 'POST':
-        form = NguoiDungForm(request.POST, instance=nguoi_dung)
+        form = NguoiDungForm(request.POST, request.FILES, instance=nguoi_dung)
         if form.is_valid():
             form.save()
             return redirect('danh_sach_nguoi_dung')
@@ -386,7 +386,7 @@ def danh_sach_combo(request):
 # Thêm Combo
 def them_combo(request):
     if request.method == 'POST':
-        form = ComboForm(request.POST)
+        form = ComboForm(request.POST, request.FILES)  # Add request.FILES
         if form.is_valid():
             form.save()
             return redirect('danh_sach_combo')
@@ -398,13 +398,14 @@ def them_combo(request):
 def sua_combo(request, id):
     combo = get_object_or_404(Combo, id=id)
     if request.method == 'POST':
-        form = ComboForm(request.POST, instance=combo)
+        form = ComboForm(request.POST, request.FILES, instance=combo)  # Add request.FILES
         if form.is_valid():
             form.save()
             return redirect('danh_sach_combo')
     else:
         form = ComboForm(instance=combo)
     return render(request, 'base/sua_combo.html', {'form': form})
+
 
 # Xóa Combo
 def xoa_combo(request, id):
@@ -560,4 +561,249 @@ def tao_xuat_chieu_tu_dong(request):
     
     return render(request, 'base/xuat_chieu_form.html', {'form': form})
 
+
+# Trong views.py
+from django.shortcuts import render, get_object_or_404
+from .models import Phim, XuatChieu, GheNgoi, Ve
+
+# views.py
+
+def seat_selection(request, phim_id, xuat_chieu_id):
+    # Lấy thông tin phim và xuất chiếu
+    phim = get_object_or_404(Phim, id=phim_id)
+    xuat_chieu = get_object_or_404(XuatChieu, id=xuat_chieu_id, phim=phim)
+
+    # Lấy các ghế có sẵn cho xuất chiếu này
+    seats = GheNgoi.objects.filter(rap_chieu=xuat_chieu.rap_chieu)
+    
+    # Kiểm tra các ghế đã được đặt hay chưa
+    booked_seats = Ve.objects.filter(thoi_gian_chieu=xuat_chieu).values_list('ghe_ngoi__id', flat=True)
+    # Ghế đã được đặt
+    booked_seats = set(booked_seats)
+
+    context = {
+        'phim': phim,
+        'xuat_chieu': xuat_chieu,
+        'seats': seats,
+        'booked_seats': booked_seats,  # Truyền danh sách ghế đã đặt
+    }
+    return render(request, 'seats/seat.html', context)
+
+
+
+
+#SELECTCOMBODB
+from django.shortcuts import render, get_object_or_404
+from .models import Combo, Phim, XuatChieu, GheNgoi
+
+def select_combo(request, phim_id, xuat_chieu_id, ghe_ngoi_ids):
+    # Lấy thông tin phim và xuất chiếu
+    phim = get_object_or_404(Phim, id=phim_id)
+    xuat_chieu = get_object_or_404(XuatChieu, id=xuat_chieu_id)
+
+    # Tách ghe_ngoi_ids thành danh sách các ID
+    ghe_ngoi_ids_list = [int(id) for id in ghe_ngoi_ids.split(',')]
+    ghe_ngoi_objects = GheNgoi.objects.filter(id__in=ghe_ngoi_ids_list)
+
+    # Lấy danh sách các combo có sẵn
+    combos = Combo.objects.all()
+
+    # Cập nhật context và render trang tiếp theo
+    context = {
+        'phim': phim,
+        'xuat_chieu': xuat_chieu,
+        'ghe_ngoi': ghe_ngoi_objects,
+        'combos': combos
+    }
+
+    return render(request, 'comboselect/select_combo.html', context)
+
+
+
+
+
+
+
+# from django.shortcuts import render, redirect
+# from django.contrib import messages
+# from django.contrib.auth import login as auth_login, logout as auth_logout
+# from django.contrib.auth.hashers import check_password
+# from .forms import RegistrationForm, LoginForm
+# from .models import NguoiDung
+
+# def register_(request):
+#     if request.method == 'POST':
+#         form = RegistrationForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, "Registration successful")
+#             return redirect('login')
+#         else:
+#             messages.error(request, "Please correct the errors below")
+#     else:
+#         form = RegistrationForm()
+
+#     return render(request, 'base/register.html', {'form': form})
+
+# views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.forms import AuthenticationForm
+from .forms import RegisterForm, ProfileForm
+from django.contrib.auth.decorators import login_required
+from .models import NguoiDung
+
+# views.py
+
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import AuthenticationForm
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                return redirect('profile')  # Chuyển hướng đến trang profile
+            else:
+                messages.error(request, 'Tài khoản hoặc mật khẩu không đúng.')
+        else:
+            messages.error(request, 'Vui lòng kiểm tra lại thông tin đăng nhập.')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'base/login_demo.html', {'form': form})
+
+# Đăng ký người dùng
+def register_view(request):
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # Đăng nhập ngay sau khi đăng ký
+            return redirect('profile')
+    else:
+        form = RegisterForm()
+    return render(request, 'base/register.html', {'form': form})
+
+# Trang hồ sơ người dùng
+@login_required
+def profile_view(request):
+    if request.method == 'POST':
+        profile_form = ProfileForm(request.POST, instance=request.user)
+        if profile_form.is_valid():
+            profile_form.save()
+            return redirect('profile')  # Cập nhật và quay lại trang profile
+    else:
+        profile_form = ProfileForm(instance=request.user)
+    return render(request, 'base/profile.html', {'profile_form': profile_form})
+
+# Đăng xuất người dùng
+def logout_view(request):
+    logout(request)
+    return redirect('base/login')
+
+import qrcode
+import os
+from django.core.files.base import ContentFile
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse
+from io import BytesIO
+from .models import Phim, XuatChieu, GheNgoi, Combo, NguoiDung, Ve
+
+
+
+
+def check_out(request, phim_id, xuat_chieu_id, ghe_ngoi_ids, combo_ids):
+    # Get objects based on IDs
+    phim = get_object_or_404(Phim, id=phim_id)
+    xuat_chieu = get_object_or_404(XuatChieu, id=xuat_chieu_id)
+    ghe_ngoi = GheNgoi.objects.filter(id__in=ghe_ngoi_ids.split(','))
+    combos = Combo.objects.filter(id__in=combo_ids.split(','))
+    
+    # Get the logged-in user
+    user = request.user
+
+    # Calculate ticket price based on selected seats
+    gia_ve = phim.gia_ve * len(ghe_ngoi) + sum([ghe.gia_ve for ghe in ghe_ngoi])
+    gia_combo = sum([combo.gia_combo for combo in combos])
+    total = gia_ve + gia_combo
+
+    if request.method == 'POST':
+        link_face = request.FILES.get('face_image')
+        
+        # Generate a simple code for the ticket
+        ma_qr_ve = f"{user.username}_{phim_id}_{xuat_chieu_id}_{ghe_ngoi_ids}"
+
+        # Create the ticket (Ve) and save the code
+        ve = Ve.objects.create(
+            phim=phim,
+            thoi_gian_chieu=xuat_chieu,
+            rap=xuat_chieu.rap_chieu,
+            user_mua_ve=user,
+            link_face=link_face if link_face else 'face/default_face.jpg',
+            ma_qr_ve=ma_qr_ve,  # Store the simple code
+        )
+
+        # Add selected seats and combos
+        ve.ghe_ngoi.set(ghe_ngoi)
+        ve.combo.set(combos)
+        
+        return redirect('ticket_success', ve_id=ve.id)
+
+    return render(request, 'checkout/check_out.html', {
+        'phim': phim,
+        'xuat_chieu': xuat_chieu,
+        'ghe_ngoi': ghe_ngoi,
+        'combos': combos,
+        'gia_ve': gia_ve,
+        'gia_combo': gia_combo,
+        'total': total,
+    })
+
+
+
+
+
+import io
+import qrcode
+import base64
+from django.shortcuts import render, get_object_or_404
+from .models import Ve
+
+def generate_qr_code(ma_ve):
+    # Tạo mã QR
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+    qr.add_data(ma_ve)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill='black', back_color='white')
+
+    # Tạo đối tượng BytesIO để lưu ảnh trong bộ nhớ
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+
+    # Mã hóa thành base64
+    qr_code_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+
+    # Trả về dữ liệu mã QR dưới dạng base64 để hiển thị
+    return qr_code_base64
+
+def ticket_success(request, ve_id):
+    # Lấy đối tượng vé dựa trên ve_id
+    ve = get_object_or_404(Ve, id=ve_id)
+
+    # Tạo mã QR sử dụng trường ma_qr_ve
+    qr_code_data = generate_qr_code(ve.ma_qr_ve)
+
+    return render(request, 'base/ticket_success.html', {
+        've': ve,
+        'qr_code_data': qr_code_data,  # Truyền dữ liệu mã QR đến template
+    })
 

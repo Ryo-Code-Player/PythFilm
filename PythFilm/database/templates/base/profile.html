@@ -1,0 +1,8 @@
+<!-- profile.html -->
+<h1>Hồ sơ người dùng</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ profile_form.as_p }}
+    <button type="submit">Cập nhật hồ sơ</button>
+</form>
+<a href="{% url 'logout' %}">Đăng xuất</a>

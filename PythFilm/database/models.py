@@ -296,6 +296,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 class Combo(models.Model):
     ten_combo = models.CharField(max_length=100)  # Tên combo
     gia_combo = models.DecimalField(max_digits=10, decimal_places=2)  # Giá combo
+    img_combo = models.ImageField(upload_to='img_combo/')
 
     def __str__(self):
         return f"{self.ten_combo} - {self.gia_combo}"
@@ -334,6 +335,7 @@ class Phim(models.Model):
     tom_tat = models.TextField()
     thumbnail = models.ImageField(upload_to='thumbnails/')  # Đường dẫn lưu ảnh thumbnail
     do_tuoi = models.PositiveIntegerField(validators=[MinValueValidator(0)], default=0)  # Độ tuổi được xem phim
+    gia_ve = models.DecimalField(max_digits=10, decimal_places=2, default=100000.00)  # Set default value to 0.00
 
     def __str__(self):
         return self.ten_phim
@@ -358,40 +360,61 @@ class GheNgoi(models.Model):
     def __str__(self):
         return f"{self.ten_ghe} - {self.rap_chieu.ten_rap} ({self.loai_ghe})"
 
-# Bảng Người Dùng (User)
-class NguoiDung(models.Model):
+from django.contrib.auth.models import AbstractBaseUser
+from django.db import models
+
+# models.py
+from django.contrib.auth.models import BaseUserManager
+
+class NguoiDungManager(BaseUserManager):
+    def create_user(self, username, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('Email phải được cung cấp')
+        email = self.normalize_email(email)
+        user = self.model(username=username, email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        return self.create_user(username, email, password, **extra_fields)
+
+    def get_by_natural_key(self, username):
+        return self.get(username=username)
+
+# Cập nhật lại lớp NguoiDung để sử dụng manager này
+class NguoiDung(AbstractBaseUser):
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     sdt = models.CharField(max_length=15)
-    password = models.CharField(max_length=128)
     gioi_tinh = models.CharField(max_length=10, choices=[('Nam', 'Nam'), ('Nu', 'Nữ')])
     ngay_sinh = models.DateField()
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email', 'sdt', 'gioi_tinh', 'ngay_sinh']
+
+    objects = NguoiDungManager()  # Đảm bảo rằng manager đã được thêm vào
 
     def __str__(self):
         return self.username
 
-# Bảng Vé (Ticket)
+
 class Ve(models.Model):
     phim = models.ForeignKey(Phim, on_delete=models.CASCADE)
     thoi_gian_chieu = models.ForeignKey(XuatChieu, on_delete=models.CASCADE)
     rap = models.ForeignKey(RapChieu, on_delete=models.CASCADE)
-    ghe_ngoi = models.ForeignKey(GheNgoi, on_delete=models.CASCADE)  # Liên kết đến bảng Ghế Ngồi
-    loai_ghe = models.CharField(max_length=50, blank=True, editable=False)  # Tự động điền loại ghế
-    gia_ve = models.DecimalField(max_digits=10, decimal_places=2, blank=True, editable=False)  # Tự động điền giá vé
-    ma_qr_ve = models.CharField(max_length=100)
+    ghe_ngoi = models.ManyToManyField(GheNgoi)
+    ma_qr_ve = models.CharField(max_length=500, default='')  # Set default value
     user_mua_ve = models.ForeignKey(NguoiDung, on_delete=models.CASCADE)
-    link_face = models.CharField(max_length=200)  # Link hình ảnh để nhận diện khuôn mặt
-    combo = models.ForeignKey(Combo, on_delete=models.CASCADE, null=True, blank=True)  # Liên kết đến bảng Combo
+    link_face = models.ImageField(upload_to='face/', default='face/default_face.jpg')
+    combo = models.ManyToManyField(Combo, blank=True)
 
     def __str__(self):
         return f"Vé {self.phim.ten_phim} - {self.user_mua_ve.username}"
 
-    # Ghi đè phương thức save để tự động điền loai_ghe và gia_ve từ bảng Ghế Ngồi
-    def save(self, *args, **kwargs):
-        if self.ghe_ngoi:
-            self.loai_ghe = self.ghe_ngoi.loai_ghe  # Lấy loại ghế từ Ghế Ngồi
-            self.gia_ve = self.ghe_ngoi.gia_ve  # Lấy giá vé từ Ghế Ngồi
-        super().save(*args, **kwargs)
 
 # Bảng Bình Luận (Comment)
 class BinhLuan(models.Model):

@@ -94,10 +94,23 @@ urlpatterns = [
     path('adminn', views.quan_ly, name='quan_ly'),
     
     path('', views.index, name='index'),
+    path('index', views.index, name='index'),
+    path('comboselect/', views.select_combo, name='select_combo'),
+    path('checkout/', views.check_out, name='check_out'), 
+    path('tao-xuat-chieu/', views.tao_xuat_chieu_tu_dong, name='tao_xuat_chieu'),
     path('film/<int:phim_id>/', views.film_detail, name='film_detail'),
+    path('seat/<int:phim_id>/<int:xuat_chieu_id>/', views.seat_selection, name='seat_selection'),
+    path('comboselect/<int:phim_id>/<int:xuat_chieu_id>/<str:ghe_ngoi_ids>/', views.select_combo, name='select_combo'),
+    path('checkout/<int:phim_id>/<int:xuat_chieu_id>/<str:ghe_ngoi_ids>/<str:combo_ids>', views.check_out, name='chec_kout'),
+    path('ticket_success/<int:ve_id>/', views.ticket_success, name='ticket_success'),
+    
+
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
+    path('profile/', views.profile_view, name='profile'),
+    path('logout/', views.logout_view, name='logout'),
     
     
-        path('tao-xuat-chieu/', views.tao_xuat_chieu_tu_dong, name='tao_xuat_chieu'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
