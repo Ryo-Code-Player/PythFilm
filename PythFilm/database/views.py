@@ -807,3 +807,45 @@ def ticket_success(request, ve_id):
         'qr_code_data': qr_code_data,  # Truyền dữ liệu mã QR đến template
     })
 
+#Contact
+from django.contrib import messages
+from .models import Contact
+def contact_view(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        subject = request.POST.get("subject")
+        message = request.POST.get("message")
+        
+        # Lưu thông tin vào database
+        Contact.objects.create(name=name, email=email, subject=subject, message=message)
+        
+        # Gửi thông báo thành công
+        messages.success(request, "Liên hệ của bạn đã được gửi!")
+        return redirect("contact")
+
+    return render(request, "contact/lien-he.html")
+
+def contact_list(request):
+    contacts = Contact.objects.all()
+    return render(request, 'base/danh_sach_lien_he.html', {'contacts': contacts})
+
+def contact_edit(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    if request.method == 'POST':
+        form = ContactForm(request.POST, instance=contact)
+        if form.is_valid():
+            form.save()
+            return redirect('danh_sach_lien_he')
+    else:
+        form = ContactForm(instance=contact)
+    return render(request, 'base/sua_lien_he.html', {'form': form})
+
+def contact_delete(request, id):
+    contact = get_object_or_404(Contact, id=id)
+    if request.method == 'POST':
+        contact.delete()
+        return redirect('danh_sach_lien_he')
+    return render(request, 'base/xoa_lien_he.html', {'contact': contact})
+
+

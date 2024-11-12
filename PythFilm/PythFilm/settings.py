@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'PythFilm.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',  # Sử dụng MySQL
-        'NAME': 'movie_ticket_db',        # Tên database bạn đã tạo trong phpMyAdmin
+        'NAME': 'movie_ticket_db2',        # Tên database bạn đã tạo trong phpMyAdmin
         'USER': 'root',            # Tên user MySQL (thường là 'root')
         'PASSWORD': '',        # Mật khẩu của user
         'HOST': 'localhost',                   # Nếu MySQL chạy trên cùng một server                     # Port mặc định của MySQL

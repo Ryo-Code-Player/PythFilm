@@ -426,3 +426,12 @@ class BinhLuan(models.Model):
     def __str__(self):
         return f"Bình luận của {self.user_binh_luan.username} - {self.phim.ten_phim}"
 
+# Bảng Contact
+class Contact(models.Model):
+    name = models.CharField(max_length=255)  # lưu trữ các chuỗi văn bản có độ dài tối đa được chỉ định
+    email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    message = models.TextField() # một trường văn bản không giới hạn độ dài
+    # biểu diễn dưới dạng chuỗi (string)
+    def __str__(self):
+        return f"{self.name} - {self.email}"

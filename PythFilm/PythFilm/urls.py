@@ -110,6 +110,11 @@ urlpatterns = [
     path('profile/', views.profile_view, name='profile'),
     path('logout/', views.logout_view, name='logout'),
     
+    #Contact quan
+    path('contact/', views.contact_view, name='contact'),
+    path('lienhe/', views.contact_list, name='danh_sach_lien_he'),
+    path('lienhe/sua/<int:pk>/', views.contact_edit, name='sua_lien_he'),
+    path('lienhe/xoa/<int:id>/', views.contact_delete, name='xoa_lien_he'),
     
 ]
 if settings.DEBUG:
