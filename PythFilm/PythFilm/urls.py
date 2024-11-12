@@ -115,6 +115,7 @@ urlpatterns = [
     path('lienhe/', views.contact_list, name='danh_sach_lien_he'),
     path('lienhe/sua/<int:pk>/', views.contact_edit, name='sua_lien_he'),
     path('lienhe/xoa/<int:id>/', views.contact_delete, name='xoa_lien_he'),
+    # path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
 ]
 if settings.DEBUG:

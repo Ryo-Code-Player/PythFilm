@@ -15,7 +15,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # settings.py
-AUTH_USER_MODEL = 'database.NguoiDung'  # Thay 'yourapp' bằng tên ứng dụng của bạn
+AUTH_USER_MODEL = 'database.NguoiDung'  
 
 
 # Quick-start development settings - unsuitable for production
@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'PythFilm.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',  # Sử dụng MySQL
-        'NAME': 'movie_ticket_db2',        # Tên database bạn đã tạo trong phpMyAdmin
+        'NAME': 'movie_ticket_db',        # Tên database bạn đã tạo trong phpMyAdmin
         'USER': 'root',            # Tên user MySQL (thường là 'root')
         'PASSWORD': '',        # Mật khẩu của user
         'HOST': 'localhost',                   # Nếu MySQL chạy trên cùng một server                     # Port mặc định của MySQL

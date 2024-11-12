@@ -645,54 +645,71 @@ def select_combo(request, phim_id, xuat_chieu_id, ghe_ngoi_ids):
 
 #     return render(request, 'base/register.html', {'form': form})
 
-# views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.forms import AuthenticationForm
+
+
+
+# register
+from .forms import UserForm
+from django.contrib.auth.models import User
 from .forms import RegisterForm, ProfileForm
-from django.contrib.auth.decorators import login_required
-from .models import NguoiDung
-
-# views.py
-
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render, redirect
-from django.contrib import messages
-
-def login_view(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            
-            if user is not None:
-                login(request, user)
-                return redirect('profile')  # Chuyển hướng đến trang profile
-            else:
-                messages.error(request, 'Tài khoản hoặc mật khẩu không đúng.')
-        else:
-            messages.error(request, 'Vui lòng kiểm tra lại thông tin đăng nhập.')
-    else:
-        form = AuthenticationForm()
-    return render(request, 'base/login_demo.html', {'form': form})
-
-# Đăng ký người dùng
+from django.contrib.auth import logout
+from django.contrib.auth import login as auth_login, logout as auth_logout
 def register_view(request):
     if request.method == 'POST':
-        form = RegisterForm(request.POST)
+        form = NguoiDungForm(request.POST)
+        
         if form.is_valid():
-            user = form.save()
-            login(request, user)  # Đăng nhập ngay sau khi đăng ký
-            return redirect('profile')
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+            password = form.cleaned_data['password']
+            sdt = form.cleaned_data['sdt']
+            gioi_tinh = form.cleaned_data['gioi_tinh']
+            ngay_sinh = form.cleaned_data['ngay_sinh']
+
+            user = NguoiDung.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                sdt=sdt,
+                gioi_tinh=gioi_tinh,
+                ngay_sinh=ngay_sinh
+            )
+
+            messages.success(request, "Đăng ký thành công!")
+            return redirect('login')
     else:
-        form = RegisterForm()
-    return render(request, 'base/register.html', {'form': form})
+        form = NguoiDungForm()
+
+    return render(request, 'user/register.html', {'form': form})
+
+
+#login
+from django.contrib import messages
+from django.contrib.auth import authenticate, login
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        # Xác thực với NguoiDung model thay vì User
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            messages.success(request, "Đăng nhập thành công!")
+            return redirect('index')
+        else:
+            messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng!')
+            return redirect('login')
+
+    return render(request, 'user/login.html')
 
 # Trang hồ sơ người dùng
-@login_required
+# @login_required
 def profile_view(request):
     if request.method == 'POST':
         profile_form = ProfileForm(request.POST, instance=request.user)
@@ -706,7 +723,8 @@ def profile_view(request):
 # Đăng xuất người dùng
 def logout_view(request):
     logout(request)
-    return redirect('base/login')
+    messages.success(request, "Đăng xuất thành công!")
+    return redirect('index')
 
 import qrcode
 import os

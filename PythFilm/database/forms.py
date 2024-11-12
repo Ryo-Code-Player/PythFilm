@@ -1,6 +1,7 @@
 from django import forms
 from .models import Phim, NguoiDung, TheLoai, DinhDangPhim, XuatChieu, RapChieu, Ve, GheNgoi, Combo, BinhLuan
-
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django import forms
 from .models import Combo
 
@@ -15,13 +16,22 @@ class PhimForm(forms.ModelForm):
         fields = ['ten_phim', 'the_loai', 'dao_dien', 'dien_vien', 'thoi_luong', 'tom_tat', 'thumbnail', 'do_tuoi','gia_ve']
 
 class NguoiDungForm(forms.ModelForm):
+    password_confirm = forms.CharField(widget=forms.PasswordInput)
     class Meta:
         model = NguoiDung
         fields = ['username', 'email', 'sdt', 'password', 'gioi_tinh', 'ngay_sinh']
         widgets = {
-            'password': forms.PasswordInput(),  # Hiển thị trường mật khẩu
-            'ngay_sinh': forms.DateInput(attrs={'type': 'date', 'placeholder': 'dd/mm/yyyy'})  # Định dạng ngày sinh
+            'password': forms.PasswordInput(),
+            'ngay_sinh': forms.DateInput(attrs={'type': 'date', 'placeholder': 'dd/mm/yyyy'})
         }
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        password_confirm = cleaned_data.get("password_confirm")
+
+        if password != password_confirm:
+            raise forms.ValidationError("Mật khẩu và mật khẩu nhập lại không khớp!")
+        return cleaned_data
         
 class TheLoaiForm(forms.ModelForm):
     class Meta:
@@ -120,43 +130,6 @@ class XuatChieuFormTuDong(forms.Form):
 
 
 
-
-# from django import forms
-# from .models import NguoiDung
-
-# class RegistrationForm(forms.ModelForm):
-#     class Meta:
-#         model = NguoiDung
-#         fields = ['username', 'email', 'sdt', 'password', 'gioi_tinh', 'ngay_sinh']
-#         widgets = {
-#             'password': forms.PasswordInput(),  # Hiển thị trường mật khẩu
-#             'ngay_sinh': forms.DateInput(attrs={'type': 'date', 'placeholder': 'dd/mm/yyyy'})  # Định dạng ngày sinh
-#         }
-# from django import forms
-# from .models import NguoiDung
-
-# class LoginForm(forms.Form):
-#     username = forms.CharField(max_length=150)
-#     password = forms.CharField(widget=forms.PasswordInput)
-
-
-# # forms.py
-# from django import forms
-# from django.contrib.auth.forms import AuthenticationForm
-# from .models import NguoiDung
-
-# class CustomLoginForm(AuthenticationForm):
-#     class Meta:
-#         model = NguoiDung
-#         fields = ['username', 'password']
-# # Form chỉnh sửa thông tin người dùng (profile)
-# class ProfileForm(forms.ModelForm):
-#     class Meta:
-#         model = NguoiDung
-#         fields = ['email', 'sdt', 'gioi_tinh', 'ngay_sinh']
-
-
-
 # forms.py
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
@@ -178,3 +151,22 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = NguoiDung
         fields = ['email', 'sdt', 'gioi_tinh', 'ngay_sinh']
+
+
+class NguoiDungForm(forms.ModelForm):
+    class Meta:
+        model = NguoiDung
+        fields = ['username', 'email', 'sdt', 'password', 'gioi_tinh', 'ngay_sinh']
+        widgets = {
+            'password': forms.PasswordInput(),  # Hiển thị trường mật khẩu
+            'ngay_sinh': forms.DateInput(attrs={'type': 'date', 'placeholder': 'dd/mm/yyyy'})  # Định dạng ngày sinh
+        }
+
+class UserForm(UserCreationForm):
+    password = forms.CharField(widget=forms.PasswordInput)
+    class Meta:
+        model = User
+        fields = ['username', 'password']
+        widgets = {
+            'password': forms.PasswordInput(),
+        }
