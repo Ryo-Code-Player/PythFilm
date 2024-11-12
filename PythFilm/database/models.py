@@ -156,5 +156,3 @@ class profile(AbstractUser):
     sdt = models.CharField(max_length=15)
     gioi_tinh = models.CharField(max_length=10, choices=[('Nam', 'Nam'), ('Nu', 'Nữ')])
     ngay_sinh = models.DateField()
-    groups = models.ManyToManyField('auth.Group', related_name='profile_set', blank=True)
-    user_permissions = models.ManyToManyField('auth.Permission', related_name='profile_set', blank=True) #Phân quyền nhóm người dùng
