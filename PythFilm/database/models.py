@@ -147,3 +147,14 @@ class Contact(models.Model):
     # biểu diễn dưới dạng chuỗi (string)
     def __str__(self):
         return f"{self.name} - {self.email}"
+
+# Bảng profile
+from django.contrib.auth.models import AbstractUser
+class profile(AbstractUser):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    sdt = models.CharField(max_length=15)
+    gioi_tinh = models.CharField(max_length=10, choices=[('Nam', 'Nam'), ('Nu', 'Nữ')])
+    ngay_sinh = models.DateField()
+    groups = models.ManyToManyField('auth.Group', related_name='profile_set', blank=True)
+    user_permissions = models.ManyToManyField('auth.Permission', related_name='profile_set', blank=True) #Phân quyền nhóm người dùng
