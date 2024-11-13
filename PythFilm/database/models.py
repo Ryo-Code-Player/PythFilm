@@ -188,3 +188,14 @@ class UserVoucher(models.Model):
 
     def __str__(self):
         return f'{self.nguoi_dung.username} - {self.voucher.code}'
+
+
+# Bảng profile
+from django.contrib.auth.models import AbstractUser
+class profile(AbstractUser):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    sdt = models.CharField(max_length=15)
+    gioi_tinh = models.CharField(max_length=10, choices=[('Nam', 'Nam'), ('Nu', 'Nữ')])
+    ngay_sinh = models.DateField()
+

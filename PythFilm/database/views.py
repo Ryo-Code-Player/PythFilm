@@ -720,6 +720,47 @@ def profile_view(request):
         profile_form = ProfileForm(instance=request.user)
     return render(request, 'base/profile.html', {'profile_form': profile_form})
 
+# Trang cập nhật thông tin người dùng
+from django.contrib.auth.decorators import login_required
+@login_required(login_url='login')  
+def updateUser(request):
+    user = request.user  
+    form = NguoiDungForm(instance=user)
+
+    if request.method == 'POST':
+        form = NguoiDungForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Cập nhật thông tin thành công!")
+            return redirect('profile') 
+
+        else:
+            messages.error(request, "Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.")
+    
+    context = {'form': form, 'user': user}
+    return render(request, 'base/update-user.html', context)
+
+# Trang cập nhật password
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+@login_required(login_url='login')
+def updatePassword(request):
+    user = request.user 
+    form = PasswordChangeForm(user=user)
+    if request.method == 'POST':
+        form = PasswordChangeForm(user=user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, form.user)
+            messages.success(request, "Cập nhật mật khẩu thành công!")
+            return redirect('profile')
+        else:
+            messages.error(request, "Xảy ra lỗi trong quá trình cập nhật")
+    
+    context = {'form': form}
+    return render(request, 'base/password.html', context)
+
+
 # Đăng xuất người dùng
 def logout_view(request):
     logout(request)
