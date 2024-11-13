@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name='revisit-after' content='7 days'/><title>Rạp phim Starlight</title><meta itemprop='name' content='Rạp phim Starlight'><meta property='og:title' content='Rạp phim Starlight' /> <meta name='twitter:title' content ='Rạp phim Starlight'/><meta name='twitter:card' content ='summary'/><meta name='description' content ='Rạp phim Starlight'/><meta name='twitter:description' content ='Rạp phim Starlight'/><meta itemprop='description' content='Rạp phim Starlight' /><meta property='og:description' content='Rạp phim Starlight' /> <meta property='og:locale' content='vi_VN' /><link rel='alternate' hreflang='vi_VN' href='index.html'><meta property='og:type' content='website' /><meta name='keywords' content='Rạp phim Starlight'/><meta property='og:site_name' content='StarLightSITE' /><meta name='twitter:site' content ='StarLightSITE'/><meta name='robots' content='index,follow'/><meta property='fb:admins' content='' />
+    <meta name='revisit-after' content='7 days'/><title>Rạp phim PythFilm</title><meta itemprop='name' content='Rạp phim PythFilm'><meta property='og:title' content='Rạp phim Starlight' /> <meta name='twitter:title' content ='Rạp phim Starlight'/><meta name='twitter:card' content ='summary'/><meta name='description' content ='Rạp phim Starlight'/><meta name='twitter:description' content ='Rạp phim Starlight'/><meta itemprop='description' content='Rạp phim Starlight' /><meta property='og:description' content='Rạp phim Starlight' /> <meta property='og:locale' content='vi_VN' /><link rel='alternate' hreflang='vi_VN' href='index.html'><meta property='og:type' content='website' /><meta name='keywords' content='Rạp phim Starlight'/><meta property='og:site_name' content='StarLightSITE' /><meta name='twitter:site' content ='StarLightSITE'/><meta name='robots' content='index,follow'/><meta property='fb:admins' content='' />
     <link href="https://fonts.googleapis.com/css?family=Montserrat:thin,extra-light,light,bold,100,200,300,400,500,600,700,800" rel="stylesheet">
     <!-- External CSS -->
 
@@ -132,6 +132,7 @@
             <li class="user-info">
                 <a href="#" class="user-name">{{ user.username }} <span class="dropdown-arrow">&#9660;</span></a>
                 <ul class="logout-menu">
+                    <li><a href="{% url 'profile' %}" style="color:#000;">Thông tin </a></li>
                     <li><a href="{% url 'logout' %}" style="color:#000;">Đăng xuất</a></li>
                 </ul>
             </li>
@@ -206,8 +207,8 @@
                                     </ul>
                                 </li>
                                 <li><a href="uu-dai.html">Khuyến Mãi</a></li>
-                                <li><a href="{% url 'contact' %}">Điện Ảnh</a></li>
-                                <li><a href="lien-he.html">Liên hệ</a></li>
+                                <li><a href="{% url 'contact' %}">Liên hệ</a></li>
+                               
                             </ul>
                         </nav>
                     </div>
