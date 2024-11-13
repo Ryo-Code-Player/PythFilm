@@ -116,6 +116,10 @@ urlpatterns = [
     path('lienhe/sua/<int:pk>/', views.contact_edit, name='sua_lien_he'),
     path('lienhe/xoa/<int:id>/', views.contact_delete, name='xoa_lien_he'),
     # path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+
+    path('managevouchers/', views.manage_vouchers, name='managevouchers'),
+    path('addvoucher/', views.add_voucher, name='add_voucher'),
+    # path('assignvoucher/', views.assign_voucher_to_user, name='assignvoucher'),
     
 ]
 if settings.DEBUG:

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Phim, NguoiDung, TheLoai, DinhDangPhim, XuatChieu, RapChieu, Ve, GheNgoi, Combo, BinhLuan
+from .models import Phim, NguoiDung, TheLoai, DinhDangPhim, XuatChieu, RapChieu, Ve, GheNgoi, Combo, BinhLuan, Contact
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django import forms
@@ -170,3 +170,15 @@ class UserForm(UserCreationForm):
         widgets = {
             'password': forms.PasswordInput(),
         }
+
+class ContactForm(forms.ModelForm):
+    class Meta:
+        model = Contact
+        fields = ['name', 'email', 'subject', 'message']
+
+from .models import Voucher
+
+class VoucherForm(forms.ModelForm):
+    class Meta:
+        model = Voucher
+        fields = ['voucher_type', 'code', 'description', 'discount_value', 'discount_type', 'min_amount_required', 'start_date', 'end_date', 'active']

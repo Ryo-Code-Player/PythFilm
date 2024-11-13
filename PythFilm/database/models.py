@@ -1,6 +1,7 @@
 
 
 from django.db import models
+from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Bảng Combo (Combo)
@@ -104,6 +105,7 @@ class NguoiDung(AbstractBaseUser):
     sdt = models.CharField(max_length=15)
     gioi_tinh = models.CharField(max_length=10, choices=[('Nam', 'Nam'), ('Nu', 'Nữ')])
     ngay_sinh = models.DateField()
+    date_joined = models.DateTimeField(default=timezone.now)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email', 'sdt', 'gioi_tinh', 'ngay_sinh']
@@ -147,3 +149,42 @@ class Contact(models.Model):
     # biểu diễn dưới dạng chuỗi (string)
     def __str__(self):
         return f"{self.name} - {self.email}"
+    
+# vourcher
+
+class Voucher(models.Model):
+    VOUCHER_TYPE_CHOICES = [
+        ('new_user', 'Người Mới'),
+        ('holiday', 'Ngày Lễ'),
+    ]
+    
+    DISCOUNT_TYPE_CHOICES = [
+        ('percentage', 'Giảm Theo Phần Trăm'),
+        ('fixed', 'Giảm Cố Định'),
+    ]
+
+    voucher_type = models.CharField(max_length=50, choices=VOUCHER_TYPE_CHOICES)
+    code = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True, null=True)
+    discount_value = models.FloatField()  # Giá trị giảm giá
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES)  # Loại giảm giá
+    min_amount_required = models.FloatField(default=0)  # Số tiền yêu cầu để sử dụng voucher
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    active = models.BooleanField(default=True)
+    
+
+    def __str__(self):
+        return {self.code}
+    
+NguoiDung.add_to_class('vouchers', models.ManyToManyField(Voucher, through='UserVoucher', blank=True))
+
+class UserVoucher(models.Model):
+    nguoi_dung = models.ForeignKey(NguoiDung, on_delete=models.CASCADE)
+    voucher = models.ForeignKey(Voucher, on_delete=models.CASCADE)
+    used = models.BooleanField(default=False)
+    date_issued = models.DateTimeField(default=timezone.now)
+    date_used = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.nguoi_dung.username} - {self.voucher.code}'

@@ -828,6 +828,7 @@ def ticket_success(request, ve_id):
 #Contact
 from django.contrib import messages
 from .models import Contact
+from .forms import ContactForm
 def contact_view(request):
     if request.method == "POST":
         name = request.POST.get("name")
@@ -867,3 +868,235 @@ def contact_delete(request, id):
     return render(request, 'base/xoa_lien_he.html', {'contact': contact})
 
 
+
+# vourcher
+
+# views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from .models import Voucher, UserVoucher, NguoiDung
+from .forms import VoucherForm
+
+# Quản lý voucher
+def manage_vouchers(request):
+    # if not request.user.is_staff: 
+    #     return redirect('index')
+
+    vouchers = Voucher.objects.all()
+    return render(request, 'vourcher/manage.html', {'vouchers': vouchers})
+
+# Thêm voucher mới
+def add_voucher(request):
+    # if not request.user.is_staff:  
+    #     return redirect('index')
+
+    if request.method == 'POST':
+        form = VoucherForm(request.POST)
+        if form.is_valid():
+            voucher = form.save(commit=False)
+            voucher.save()  # Lưu voucher trước khi gán cho người dùng
+            
+            # Lấy tất cả người dùng để liên kết voucher với họ
+            nguoi_dungs = NguoiDung.objects.all()
+            for nguoidung in nguoi_dungs:
+                UserVoucher.objects.create(nguoi_dung=nguoidung, voucher=voucher)
+
+            messages.success(request, "Voucher đã được tạo và liên kết với tất cả người dùng!")
+            return redirect('managevouchers')
+
+    else:
+        form = VoucherForm()
+
+    return render(request, 'vourcher/addvourcher.html', {'form': form})
+
+# Cấp voucher cho người dùng
+# def assign_voucher_to_user(request, user_id):
+#     # if not request.user.is_staff: 
+#     #     return redirect('index')
+
+#     nguoi_dung = NguoiDung.objects.get(id=user_id)
+#     vouchers = Voucher.objects.filter(active=True)
+#     if request.method == 'POST':
+#         voucher_id = request.POST.get('voucher_id')
+#         voucher = Voucher.objects.get(id=voucher_id)
+        
+#         # Kiểm tra điều kiện áp dụng voucher cho người dùng
+#         if voucher.is_valid_for_user(nguoi_dung):
+#             UserVoucher.objects.create(nguoi_dung=nguoi_dung, voucher=voucher)
+#             return redirect('managevouchers')
+#         else:
+#             # Thông báo nếu không đủ điều kiện
+#             return render(request, 'vourcher/assign.html', {'nguoi_dung': nguoi_dung, 'vouchers': vouchers, 'error': 'Không đủ điều kiện để áp dụng voucher này!'})
+
+#     return render(request, 'vourcher/assign.html', {'nguoi_dung': nguoi_dung, 'vouchers': vouchers})
+
+
+
+#analytic
+# from flask import Flask, render_template, redirect, url_for, request, send_file
+# import pandas as pd
+# import os
+# from datetime import datetime
+# import matplotlib.pyplot as plt
+
+# app = Flask(__name__)
+
+# # Đường dẫn tới các tệp
+# DATA_FILE = 'data.csv'
+# VIEW_FILE = 'view_counts_data.xlsx'
+# USER_DATA_FILE = 'users.csv'
+# static_folder = 'static'
+
+# # Biến toàn cục để đếm số lượt xem
+# view_count = 0
+
+# # Khởi tạo dữ liệu người dùng nếu file chưa tồn tại
+# def initialize_user_data():
+#     if not os.path.exists(USER_DATA_FILE):
+#         df = pd.DataFrame(columns=['id', 'username', 'email', 'role'])
+#         df.to_csv(USER_DATA_FILE, index=False)
+
+# # Kiểm tra và tạo tệp data.csv nếu chưa tồn tại
+# if not os.path.exists(DATA_FILE):
+#     df = pd.DataFrame(columns=['Tháng', 'Doanh thu tháng', 'Phim', 'Lượt mua vé', 'Yêu thích', 'Không thích'])
+#     df.to_csv(DATA_FILE, index=False)
+
+# # Hàm lấy dữ liệu từ trang web (cần định nghĩa)
+# def fetch_data():
+#     pass  # Thêm mã lấy dữ liệu của bạn ở đây
+
+# # Route để lấy dữ liệu và lưu vào CSV
+# @app.route('/fetch-data')
+# def fetch_data_route():
+#     try:
+#         fetch_data()
+#         return redirect(url_for('index'))
+#     except Exception as e:
+#         return f"Lỗi khi lấy dữ liệu: {str(e)}"
+
+# # Hàm lưu số lượt xem vào file Excel
+# def save_view_count(count):
+#     view_data = pd.DataFrame({
+#         'Số lượt xem': [count],
+#         'Thời gian': [datetime.now()]
+#     })
+
+#     try:
+#         with pd.ExcelWriter(VIEW_FILE, mode='a', if_sheet_exists='overlay', engine='openpyxl') as writer:
+#             startrow = writer.sheets['Sheet1'].max_row if 'Sheet1' in writer.sheets else 0
+#             view_data.to_excel(writer, sheet_name='Sheet1', index=False, header=writer.sheets.get('Sheet1') is None, startrow=startrow)
+#     except FileNotFoundError:
+#         view_data.to_excel(VIEW_FILE, index=False)
+
+# # Hàm tạo bảng thống kê từ dữ liệu
+# def generate_statistics(df):
+#     total_revenue = df['Doanh thu tháng'].sum()
+#     total_tickets = df['Lượt mua vé'].sum()
+#     total_movies = df['Phim'].nunique()
+#     average_tickets_per_movie = total_tickets / total_movies if total_movies > 0 else 0
+
+#     stats = {
+#         'Tổng Doanh Thu': total_revenue,
+#         'Tổng Lượt Mua Vé': total_tickets,
+#         'Số Lượng Phim Phát Hành': total_movies,
+#         'Trung Bình Lượt Mua Vé/Phim': average_tickets_per_movie
+#     }
+
+#     return stats
+
+# # Hàm tạo biểu đồ yêu thích/không thích
+# def create_pie_charts(df):
+#     movies = df['Phim'].unique()
+    
+#     for i, movie in enumerate(movies):
+#         film_data = df[df['Phim'] == movie]
+#         likes = film_data['Yêu thích'].values[0]
+#         dislikes = film_data['Không thích'].values[0]
+        
+#         plt.figure(figsize=(6, 6))
+#         plt.pie([likes, dislikes], labels=['Yêu thích', 'Không thích'], autopct='%1.1f%%', startangle=90)
+#         plt.title(f'Yêu thích / Không thích của phim {movie}')
+#         plt.axis('equal')  # Đảm bảo hình tròn
+#         plt.savefig(os.path.join(static_folder, f'pie_chart_{i}.png'))
+#         plt.close()
+
+# # Route để xuất dữ liệu sang file Excel
+# @app.route('/export')
+# def export_data():
+#     df = pd.read_csv(DATA_FILE)
+#     output_file = 'exported_data.xlsx'
+#     df.to_excel(output_file, index=False)
+#     return send_file(output_file, as_attachment=True)
+
+# # Route cho trang nhập dữ liệu
+# @app.route('/data-entry')
+# def data_entry():
+#     return render_template('data_entry.html')
+
+# # Route xử lý việc thêm dữ liệu vào data.csv
+# @app.route('/add-data', methods=['POST'])
+# def add_data():
+#     month = request.form['month']
+#     revenue = request.form['revenue']
+#     movie = request.form['movie']
+#     ticket_count = request.form['ticket_count']
+#     likes = request.form['likes']
+#     dislikes = request.form['dislikes']
+    
+#     # Tạo DataFrame mới với dữ liệu đã nhập
+#     new_data = pd.DataFrame([[month, revenue, movie, ticket_count, likes, dislikes]],
+#                             columns=['Tháng', 'Doanh thu tháng', 'Phim', 'Lượt mua vé', 'Yêu thích', 'Không thích'])
+    
+#     # Lưu dữ liệu vào data.csv
+#     new_data.to_csv(DATA_FILE, mode='a', header=False, index=False)
+
+#     return redirect(url_for('data_entry'))
+
+# # Route trang chính
+# @app.route('/')
+# def index():
+#     global view_count
+#     view_count += 1
+#     save_view_count(view_count)
+
+#     if not os.path.exists(DATA_FILE):
+#         return "Không tìm thấy file 'data.csv'. Hãy đảm bảo tệp này có sẵn trong thư mục hiện tại."
+
+#     df = pd.read_csv(DATA_FILE)
+#     df.columns = df.columns.str.strip()
+
+#     # Thực hiện tìm kiếm nếu có
+#     search_query = request.args.get('search')
+#     if search_query:
+#         df = df[df['Phim'].str.contains(search_query, case=False)]
+
+#     # Tạo bảng thống kê
+#     statistics = generate_statistics(df)
+
+#     # Chuyển đổi dữ liệu để hiển thị
+#     data_html = df.to_html(classes='table table-striped', index=False)
+
+#     # Dữ liệu cho các biểu đồ
+#     revenue_chart = 'revenue_chart.png'
+#     ticket_chart = 'ticket_chart.png'
+#     pie_charts = [f'pie_chart_{i}.png' for i in range(len(df['Phim'].unique()))]
+
+#     create_pie_charts(df)
+
+#     return render_template('index.html', 
+#                            view_count=view_count, 
+#                            data_html=data_html,
+#                            statistics=statistics,
+#                            revenue_chart=revenue_chart,
+#                            ticket_chart=ticket_chart,
+#                            pie_charts=pie_charts)
+
+# # Kiểm tra nếu thư mục static tồn tại, nếu không, tạo thư mục này
+# if not os.path.exists(static_folder):
+#     os.makedirs(static_folder)
+
+# # Chạy ứng dụng
+# if __name__ == '__main__':
+#     initialize_user_data()
+#     app.run(debug=True)
