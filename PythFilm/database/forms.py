@@ -156,9 +156,8 @@ class ProfileForm(forms.ModelForm):
 class NguoiDungForm(forms.ModelForm):
     class Meta:
         model = NguoiDung
-        fields = ['username', 'email', 'sdt', 'password', 'gioi_tinh', 'ngay_sinh']
+        fields = ['username', 'email', 'sdt', 'gioi_tinh', 'ngay_sinh']
         widgets = {
-            'password': forms.PasswordInput(),  # Hiển thị trường mật khẩu
             'ngay_sinh': forms.DateInput(attrs={'type': 'date', 'placeholder': 'dd/mm/yyyy'})  # Định dạng ngày sinh
         }
 

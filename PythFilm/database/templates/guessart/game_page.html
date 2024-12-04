@@ -1,0 +1,483 @@
+{% load static %}
+{% include "base/header.html" %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đoán Tên Phim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Đặt API YouTube trước script chính -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+/* Base styles */
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f7fc;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    .game-container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        color: #000;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .stats {
+        margin: 20px 0;
+        font-size: 1.2rem;
+    }
+
+    .remaining-guesses {
+        color: #ff5722;
+        font-weight: bold;
+    }
+
+    .score {
+        color: #4caf50;
+    }
+
+    .guess-form {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px 0;
+        gap: 15px;
+    }
+
+    .guess-form input {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .guess-form button {
+        padding: 12px 20px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: 0.3s ease;
+    }
+
+    .guess-form button:hover {
+        background: #45a049;
+        transform: scale(1.05);
+    }
+
+    .bonus-btn {
+        padding: 12px 24px;
+        background: #ff9800;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        margin: 15px 0;
+        transition: 0.3s ease;
+    }
+
+    .bonus-btn:hover {
+        background: #fb8c00;
+        transform: scale(1.05);
+    }
+
+    .bonus-btn i {
+        margin-right: 8px;
+    }
+
+    .play-again-btn {
+        padding: 12px 24px;
+        background: #666;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 15px;
+        transition: 0.3s ease;
+    }
+
+    .play-again-btn:hover {
+        background: #555;
+        transform: scale(1.05);
+    }
+
+    .result-message {
+        font-size: 1.2rem;
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .correct {
+        background: #4caf50;
+        color: white;
+    }
+
+    .incorrect {
+        background: #f44336;
+        color: white;
+    }
+
+    .ad-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+    }
+
+    .ad-modal-content {
+        position: relative;
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 60%;
+        max-width: 800px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #videoContainer {
+        width: 100%;
+        margin: 20px 0;
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+    }
+
+    #playerContainer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .button-container {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .button-container .bonus-btn,
+    .button-container .modal-btn {
+        display: inline-block;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        margin: 0 10px;
+        transition: 0.3s ease;
+    }
+
+    .button-container .bonus-btn {
+        background: #4caf50;
+        color: white;
+    }
+
+    .button-container .modal-btn.close {
+        background: #ff5722;
+        color: white;
+    }
+
+    .button-container .bonus-btn:hover,
+    .button-container .modal-btn:hover {
+        transform: scale(1.05);
+    }
+
+    #adTimer {
+        font-size: 18px;
+        color: #fbbf24;
+        margin: 15px 0;
+        text-align: center;
+    }
+
+    /* For smaller screens */
+    @media (max-width: 600px) {
+        .game-container {
+            padding: 10px;
+        }
+
+        .guess-form input {
+            max-width: 100%;
+        }
+
+        .ad-modal-content {
+            width: 80%;
+        }
+    }
+</style>
+
+</head>
+<body>
+    <div class="game-container">
+        <h1>Đoán Tên Phim</h1>
+    
+        <div class="stats">
+            <p class="remaining-guesses">Lượt đoán còn lại: {{ remaining_guesses }}/5</p>
+            <p class="score">Điểm hiện tại: {{ game.score }}</p>
+        </div>
+    
+        {% if movie_part %}
+            <img src="{{ movie_part }}" alt="Phần phim cần đoán">
+        {% endif %}
+    
+        {% if phim and remaining_guesses > 0 %}
+            <form method="POST" action="{% url 'guess_movie' phim.id %}" class="guess-form">
+                {% csrf_token %}
+                <input type="text" name="guess" placeholder="Nhập tên phim..." required>
+                <button type="submit">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+        {% endif %}
+    
+        {% if messages %}
+            {% for message in messages %}
+                <p class="result-message {% if 'success' in message.tags %}correct{% else %}incorrect{% endif %}">
+                    {{ message }}
+                </p>
+            {% endfor %}
+        {% endif %}
+    
+        {% if remaining_guesses <= 1 %}
+            <div class="bonus-ad-container">
+                {% if game.ad_view_available and not game.ad_bonus_used %}
+                    <button onclick="showAdModal()" class="bonus-btn">
+                        <i class="fas fa-play-circle"></i> Xem quảng cáo nhận thêm lượt
+                    </button>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+
+   <!-- Modal quảng cáo -->
+   <div id="adModal" class="ad-modal">
+        <div class="ad-modal-content">
+            <h3>Xem Trailer Để Nhận Thêm Lượt</h3>
+            <p>Xem trailer phim trong 30 giây để nhận thêm 1 lượt chơi!</p>
+            
+            <div id="videoContainer">
+                <div id="playerContainer"></div>
+            </div>
+
+            <div id="adTimer">
+                Thời gian còn lại: <span id="countdown">30</span>s
+            </div>
+
+            <div class="button-container">
+                <button id="watchAdBtn" class="bonus-btn" onclick="startAd()" disabled>
+                    <i class="fas fa-play-circle"></i> Bắt đầu xem
+                </button>
+                <button onclick="closeAdModal()" class="modal-btn close">
+                    <i class="fas fa-times"></i> Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let player = null;
+        let countdownInterval;
+        let adStarted = false;
+        let isYouTubeAPIReady = false;
+        let timeLeft = 30; // Thời gian đếm ngược (30 giây)
+        let currentVideoId = null;
+
+        // Xử lý khi YouTube API sẵn sàng
+        function onYouTubeIframeAPIReady() {
+            console.log('YouTube API Ready');
+            isYouTubeAPIReady = true;
+            if (currentVideoId && !player) { // Tạo player chỉ khi chưa có player
+                initializePlayer(currentVideoId);
+            }
+        }
+
+        function showAdModal() {
+            document.getElementById('adModal').style.display = 'block';
+            if (!player) {
+                // Sử dụng youtube_id từ random_ad được pass từ view
+                initializePlayer('{{ random_ad.youtube_id }}');
+            }
+        }
+
+        function initializePlayer(videoId) {
+            currentVideoId = videoId;
+            player = new YT.Player('playerContainer', {
+                height: '315',
+                width: '100%',
+                videoId: videoId,
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'enablejsapi': 1,
+                    'modestbranding': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            console.log('Player is ready');
+            const watchBtn = document.getElementById('watchAdBtn');
+            watchBtn.disabled = false; // Bật nút bắt đầu
+        }
+
+        function startAd() {
+            if (!player) {
+                console.log('Player not initialized');
+                return;
+            }
+
+            console.log('Starting ad');
+            adStarted = true;
+
+            const videoContainer = document.getElementById('videoContainer');
+            const timerDiv = document.getElementById('adTimer');
+            const watchBtn = document.getElementById('watchAdBtn');
+
+            videoContainer.style.display = 'block';
+            timerDiv.style.display = 'block';
+            watchBtn.style.display = 'none';
+
+            try {
+                player.playVideo();
+                startCountdown();
+            } catch (error) {
+                console.error('Error playing video:', error);
+                alert('Có lỗi khi phát video, vui lòng thử lại');
+                closeAdModal();
+            }
+        }
+
+        // Bắt đầu đếm ngược
+        function startCountdown() {
+            const countdownElement = document.getElementById('countdown');
+            
+            countdownInterval = setInterval(() => {
+                timeLeft--; // Giảm thời gian còn lại
+                countdownElement.textContent = timeLeft; // Cập nhật thời gian lên giao diện
+                
+                // Khi thời gian hết
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval); // Dừng bộ đếm ngược
+                    completeAd(); // Hoàn tất quảng cáo
+                }
+            }, 1000); // Cập nhật mỗi giây
+        }
+
+        function onPlayerStateChange(event) {
+            console.log('Player state changed:', event.data);
+            if (adStarted) {
+                if (event.data === YT.PlayerState.PAUSED) {
+                    console.log('Video paused');
+                    // Khi video tạm dừng, vẫn tiếp tục đếm ngược
+                    alert('Vui lòng xem hết video để nhận thưởng!');
+                } else if (event.data === YT.PlayerState.ENDED) {
+                    console.log('Video ended');
+                    clearInterval(countdownInterval); // Dừng bộ đếm ngược khi video kết thúc
+                    completeAd(); // Hoàn tất quảng cáo
+                }
+            }
+        }
+
+        function completeAd() {
+            clearInterval(countdownInterval); // Dừng bộ đếm ngược khi hoàn tất
+            if (player) {
+                player.stopVideo(); // Dừng video
+            }
+            submitReward(); // Gửi yêu cầu nhận thưởng
+        }
+
+        function closeAdModal() {
+            const modal = document.getElementById('adModal');
+            if (player) {
+                player.stopVideo();
+            }
+            clearInterval(countdownInterval);
+            modal.style.display = 'none';
+            adStarted = false;
+        }
+
+        function submitReward() {
+            fetch('{% url "claim_free_guess" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Chúc mừng! Bạn đã nhận thêm 1 lượt chơi.');
+
+                    // Cập nhật lại số lượt đoán còn lại mà không cần phải reload lại trang
+                    const remainingGuessesElement = document.querySelector('.remaining-guesses');
+
+                    // Kiểm tra xem phần tử có tồn tại hay không
+                    if (remainingGuessesElement) {
+                        let remainingGuessesText = remainingGuessesElement.textContent.trim();
+                        
+                        // Lấy phần số lượt đoán còn lại từ chuỗi
+                        let match = remainingGuessesText.match(/(\d+)\s*\/\s*\d+/);
+                        if (match) {
+                            let remainingGuesses = parseInt(match[1]);
+                            
+                            if (!isNaN(remainingGuesses)) {
+                                remainingGuesses += 1; // Tăng số lượt đoán lên
+                                remainingGuessesElement.textContent = `Lượt đoán còn lại: ${remainingGuesses}/5`;
+                            } else {
+                                alert('Không thể lấy số lượt đoán hiện tại.');
+                            }
+                        } else {
+                            alert('Không thể phân tích số lượt đoán.');
+                        }
+                    } else {
+                        alert('Không tìm thấy phần tử lượt đoán.');
+                    }
+                } else {
+                    alert('Có lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra, vui lòng thử lại sau.');
+            })
+            .finally(() => {
+                closeAdModal(); // Đảm bảo đóng modal sau khi hoàn tất
+            });
+        }
+    </script>
+</body>
+</html>

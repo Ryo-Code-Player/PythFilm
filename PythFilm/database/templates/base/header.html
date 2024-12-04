@@ -12,6 +12,8 @@
     <!-- External CSS -->
 
     <link rel="stylesheet" type="text/css" href="{% static 'Content/Style.css' %}">
+    <link rel="stylesheet" href="{% static 'seat/Content/Stylebf25.css' %}">
+    <link rel='stylesheet' type='text/css' media='screen' href="{% static 'styles/style.css' %}" />
     <style>
         .amy-movie-field-desc {
             /* Giới hạn chiều cao tối đa của phần tóm tắt */
@@ -207,6 +209,7 @@
                                     </ul>
                                 </li>
                                 <li><a href="uu-dai.html">Khuyến Mãi</a></li>
+                                <li><a href="{% url 'game_page' %}">Minigame</a></li>
                                 <li><a href="{% url 'contact' %}">Liên hệ</a></li>
                                
                             </ul>

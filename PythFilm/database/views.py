@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Phim
 from .forms import PhimForm
 from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
 
 def home(request):
     return render(request, 'home.html')  # Render a home page template
@@ -755,6 +758,7 @@ def updatePassword(request):
             messages.success(request, "Cập nhật mật khẩu thành công!")
             return redirect('profile')
         else:
+            print(form.errors)
             messages.error(request, "Xảy ra lỗi trong quá trình cập nhật")
     
     context = {'form': form}
@@ -951,193 +955,399 @@ def add_voucher(request):
 
     return render(request, 'vourcher/addvourcher.html', {'form': form})
 
-# Cấp voucher cho người dùng
-# def assign_voucher_to_user(request, user_id):
-#     # if not request.user.is_staff: 
-#     #     return redirect('index')
 
-#     nguoi_dung = NguoiDung.objects.get(id=user_id)
-#     vouchers = Voucher.objects.filter(active=True)
-#     if request.method == 'POST':
-#         voucher_id = request.POST.get('voucher_id')
-#         voucher = Voucher.objects.get(id=voucher_id)
+#MINIGAME Doan ten phim
+from django.shortcuts import render, redirect
+from .models import Phim, Player, Game, Voucher, UserVoucher
+import random
+import os
+from PIL import Image
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from .models import MiniGame
+
+def mini_game_list(request):
+    games = MiniGame.objects.all()  # Lấy danh sách tất cả các mini game
+    return render(request, 'mini_game_list.html', {'games': games})
+def mini_game_detail(request, id):
+    game = get_object_or_404(MiniGame, id=id)
+    return render(request, 'mini_game_detail.html', {'game': game})
+
+def cut_image_into_parts(image_path):
+    # Mở tấm ảnh
+    img = Image.open(image_path)
+    
+    # Lấy kích thước của tấm ảnh
+    width, height = img.size
+    
+    # Tính toán kích thước mỗi phần (chia đều cho 3x3 lưới)
+    part_width = width // 3
+    part_height = height // 3
+    
+    # Lưu các phần cắt của ảnh vào danh sách
+    parts = []
+    for row in range(3):
+        for col in range(3):
+            # Tính toán toạ độ của mỗi phần trong lưới
+            left = col * part_width
+            upper = row * part_height
+            right = left + part_width
+            lower = upper + part_height
+            
+            # Cắt phần ảnh và lưu vào danh sách
+            part = img.crop((left, upper, right, lower))
+            parts.append(part)
+    
+    # Chọn ngẫu nhiên một phần từ danh sách
+    random_part = random.choice(parts)
+    
+    # Lưu phần ngẫu nhiên này vào thư mục media
+    random_part_filename = "random_part.jpg"
+    random_part_path = os.path.join(settings.MEDIA_ROOT, random_part_filename)
+    random_part.save(random_part_path)
+    
+    # Trả về đường dẫn URL của ảnh
+    return os.path.join(settings.MEDIA_URL, random_part_filename)
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+@ensure_csrf_cookie
+@login_required
+def game_page(request):
+    player, _ = Player.objects.get_or_create(user=request.user)
+    random_ad = AdVideo.objects.filter(active=True).order_by('?').first()
+ 
+    # Tìm hoặc tạo game mới
+    game = Game.objects.filter(player=player, is_active=True).first()
+    if not game or game.remaining_guesses <= 0:  # Sử dụng remaining_guesses thay vì attempts
+        try:
+            # Random movie selection for the game
+            phim = random.choice(Phim.objects.all())
+            game = Game.objects.create(
+                player=player,
+                phim=phim,
+                is_active=True,
+                attempts=0,  # Reset số lần đoán
+                correct_guesses=0,  # Reset số lần đoán đúng
+                score=0,  # Reset điểm
+                ad_view_available=True,
+                ad_bonus_used=False,
+                remaining_guesses=5  # Khởi tạo số lượt đoán
+            )
+        except IndexError:
+            messages.error(request, "Không có phim trong hệ thống!")
+            return redirect('index')
+
+    remaining_guesses = game.remaining_guesses
+
+    try:
+        # Random movie selection and corner for each attempt
+        phim = random.choice(Phim.objects.all())  # Randomly select a movie
+        movie_image_path = phim.thumbnail.path
         
-#         # Kiểm tra điều kiện áp dụng voucher cho người dùng
-#         if voucher.is_valid_for_user(nguoi_dung):
-#             UserVoucher.objects.create(nguoi_dung=nguoi_dung, voucher=voucher)
-#             return redirect('managevouchers')
-#         else:
-#             # Thông báo nếu không đủ điều kiện
-#             return render(request, 'vourcher/assign.html', {'nguoi_dung': nguoi_dung, 'vouchers': vouchers, 'error': 'Không đủ điều kiện để áp dụng voucher này!'})
+        # Get a random corner from the selected movie
+        movie_part_url = cut_image_into_parts(movie_image_path)
 
-#     return render(request, 'vourcher/assign.html', {'nguoi_dung': nguoi_dung, 'vouchers': vouchers})
+        # Store this random movie part in the game object for the current round
+        game.phim = phim
+        game.save()
 
+        context = {
+            'player': player,
+            'game': game,
+            'phim': phim,
+            'movie_part': movie_part_url,
+            'remaining_guesses': remaining_guesses,
+            'random_ad': random_ad,
+        }
 
+        # Nếu hết lượt, tự động chuyển đến trang game over
+        if remaining_guesses <= 0:
+            game.is_active = False
+            game.save()
+            return redirect('guess_game_over')
 
-#analytic
-# from flask import Flask, render_template, redirect, url_for, request, send_file
-# import pandas as pd
-# import os
-# from datetime import datetime
-# import matplotlib.pyplot as plt
-
-# app = Flask(__name__)
-
-# # Đường dẫn tới các tệp
-# DATA_FILE = 'data.csv'
-# VIEW_FILE = 'view_counts_data.xlsx'
-# USER_DATA_FILE = 'users.csv'
-# static_folder = 'static'
-
-# # Biến toàn cục để đếm số lượt xem
-# view_count = 0
-
-# # Khởi tạo dữ liệu người dùng nếu file chưa tồn tại
-# def initialize_user_data():
-#     if not os.path.exists(USER_DATA_FILE):
-#         df = pd.DataFrame(columns=['id', 'username', 'email', 'role'])
-#         df.to_csv(USER_DATA_FILE, index=False)
-
-# # Kiểm tra và tạo tệp data.csv nếu chưa tồn tại
-# if not os.path.exists(DATA_FILE):
-#     df = pd.DataFrame(columns=['Tháng', 'Doanh thu tháng', 'Phim', 'Lượt mua vé', 'Yêu thích', 'Không thích'])
-#     df.to_csv(DATA_FILE, index=False)
-
-# # Hàm lấy dữ liệu từ trang web (cần định nghĩa)
-# def fetch_data():
-#     pass  # Thêm mã lấy dữ liệu của bạn ở đây
-
-# # Route để lấy dữ liệu và lưu vào CSV
-# @app.route('/fetch-data')
-# def fetch_data_route():
-#     try:
-#         fetch_data()
-#         return redirect(url_for('index'))
-#     except Exception as e:
-#         return f"Lỗi khi lấy dữ liệu: {str(e)}"
-
-# # Hàm lưu số lượt xem vào file Excel
-# def save_view_count(count):
-#     view_data = pd.DataFrame({
-#         'Số lượt xem': [count],
-#         'Thời gian': [datetime.now()]
-#     })
-
-#     try:
-#         with pd.ExcelWriter(VIEW_FILE, mode='a', if_sheet_exists='overlay', engine='openpyxl') as writer:
-#             startrow = writer.sheets['Sheet1'].max_row if 'Sheet1' in writer.sheets else 0
-#             view_data.to_excel(writer, sheet_name='Sheet1', index=False, header=writer.sheets.get('Sheet1') is None, startrow=startrow)
-#     except FileNotFoundError:
-#         view_data.to_excel(VIEW_FILE, index=False)
-
-# # Hàm tạo bảng thống kê từ dữ liệu
-# def generate_statistics(df):
-#     total_revenue = df['Doanh thu tháng'].sum()
-#     total_tickets = df['Lượt mua vé'].sum()
-#     total_movies = df['Phim'].nunique()
-#     average_tickets_per_movie = total_tickets / total_movies if total_movies > 0 else 0
-
-#     stats = {
-#         'Tổng Doanh Thu': total_revenue,
-#         'Tổng Lượt Mua Vé': total_tickets,
-#         'Số Lượng Phim Phát Hành': total_movies,
-#         'Trung Bình Lượt Mua Vé/Phim': average_tickets_per_movie
-#     }
-
-#     return stats
-
-# # Hàm tạo biểu đồ yêu thích/không thích
-# def create_pie_charts(df):
-#     movies = df['Phim'].unique()
+        return render(request, 'guessart/game_page.html', context)
     
-#     for i, movie in enumerate(movies):
-#         film_data = df[df['Phim'] == movie]
-#         likes = film_data['Yêu thích'].values[0]
-#         dislikes = film_data['Không thích'].values[0]
+    except Exception as e:
+        messages.error(request, f"Có lỗi xảy ra: {str(e)}")
+        return redirect('index')
+from unidecode import unidecode
+from django.shortcuts import redirect, render, get_object_or_404
+from django.contrib import messages
+from .models import Player, Game
+
+@login_required
+def guess_movie(request, phim_id):
+    if request.method != 'POST':
+        return redirect('game_page')
+    
+    player = get_object_or_404(Player, user=request.user)
+    
+    # Lấy game active mới nhất của người chơi
+    try:
+        game = Game.objects.filter(player=player, is_active=True).latest('id')
+    except Game.DoesNotExist:
+        messages.error(request, "Không tìm thấy game đang chơi!")
+        return redirect('game_page')
+
+    # Kiểm tra số lượt đoán còn lại
+    if game.remaining_guesses <= 0:
+        game.is_active = False
+        game.save()
+        return redirect('guess_game_over')
+    
+    # Chuẩn hóa (xóa dấu, chuyển thành chữ thường) tên phim người chơi đoán
+    guess = request.POST.get('guess', '').strip()
+    normalized_guess = unidecode(guess).lower()  # Loại bỏ dấu và chuyển thành chữ thường
+    
+    # Lấy tên phim chuẩn hóa để so sánh
+    correct_answer = unidecode(game.phim.ten_phim).lower()  # Loại bỏ dấu và chuyển thành chữ thường
+    
+    correct = normalized_guess == correct_answer
+    
+    # Cập nhật game
+    game.remaining_guesses -= 1  # Giảm lượt đoán
+    if correct:
+        game.correct_guesses += 1
+        game.score += 10  # Tăng điểm khi đoán đúng
+        messages.success(request, "Chính xác! +10 điểm")
+    else:
+        messages.error(request, f"Sai rồi! Đáp án đúng là: {game.phim.ten_phim}")
+
+    game.save()
+
+    # Kiểm tra điều kiện kết thúc
+    if game.remaining_guesses <= 0:
+        game.is_active = False
+        game.save()
+        if game.correct_guesses >= 3:
+            return redirect('reward_page')
+        return redirect('guess_game_over')
+
+    # Quay lại trang game để tiếp tục đoán
+    return redirect('game_page')
+
+@login_required
+def guess_result(request):
+    if request.method != 'POST':
+        return redirect('game_page')
         
-#         plt.figure(figsize=(6, 6))
-#         plt.pie([likes, dislikes], labels=['Yêu thích', 'Không thích'], autopct='%1.1f%%', startangle=90)
-#         plt.title(f'Yêu thích / Không thích của phim {movie}')
-#         plt.axis('equal')  # Đảm bảo hình tròn
-#         plt.savefig(os.path.join(static_folder, f'pie_chart_{i}.png'))
-#         plt.close()
-
-# # Route để xuất dữ liệu sang file Excel
-# @app.route('/export')
-# def export_data():
-#     df = pd.read_csv(DATA_FILE)
-#     output_file = 'exported_data.xlsx'
-#     df.to_excel(output_file, index=False)
-#     return send_file(output_file, as_attachment=True)
-
-# # Route cho trang nhập dữ liệu
-# @app.route('/data-entry')
-# def data_entry():
-#     return render_template('data_entry.html')
-
-# # Route xử lý việc thêm dữ liệu vào data.csv
-# @app.route('/add-data', methods=['POST'])
-# def add_data():
-#     month = request.form['month']
-#     revenue = request.form['revenue']
-#     movie = request.form['movie']
-#     ticket_count = request.form['ticket_count']
-#     likes = request.form['likes']
-#     dislikes = request.form['dislikes']
+    player = get_object_or_404(Player, user=request.user)
+    game = get_object_or_404(Game, player=player, is_active=True)
     
-#     # Tạo DataFrame mới với dữ liệu đã nhập
-#     new_data = pd.DataFrame([[month, revenue, movie, ticket_count, likes, dislikes]],
-#                             columns=['Tháng', 'Doanh thu tháng', 'Phim', 'Lượt mua vé', 'Yêu thích', 'Không thích'])
+    guess = request.POST.get('guess', '').strip().lower()
+    correct = game.phim.ten_phim.lower() == guess
     
-#     # Lưu dữ liệu vào data.csv
-#     new_data.to_csv(DATA_FILE, mode='a', header=False, index=False)
+    # Cập nhật game
+    game.attempts += 1
+    if correct:
+        game.correct_guesses += 1
+        player.score += 10
+        player.save()
+    
+    game.save()
+    
+    # Kiểm tra điều kiện kết thúc
+    if game.attempts >= 5:
+        game.is_active = False
+        game.save()
+        return redirect('game_over')
+        
+    context = {
+        'player': player,
+        'game': game,
+        'correct': correct,
+        'remaining_guesses': 5 - game.attempts
+    }
+    
+    return render(request, 'guessart/guess_result.html', context)
+@login_required
+def guess_game_over(request):
+    player = get_object_or_404(Player, user=request.user)
+    game = Game.objects.filter(player=player).order_by('-id').first()
+    
+    context = {
+        'player': player,
+        'game': game
+    }
+    
+    return render(request, 'guessart/game_over.html', context)
 
-#     return redirect(url_for('data_entry'))
+from django.shortcuts import render
+from .models import Player, Voucher
+from django.shortcuts import render
 
-# # Route trang chính
-# @app.route('/')
-# def index():
-#     global view_count
-#     view_count += 1
-#     save_view_count(view_count)
+@login_required
+def reward_page(request):
+    player = get_object_or_404(Player, user=request.user)
+    
+    # Lấy game mới nhất và điểm của người chơi
+    game = player.game_set.filter(is_active=False).latest('id')  # Assuming you have a relationship for the games
+    score = game.score if game else 0
+    
+    # Xác định loại voucher dựa trên điểm
+    if score >= 50:
+        voucher_code = 'SUPERCOMBO'
+    elif score >= 40:
+        voucher_code = 'VOUCHERNUOC'
+    elif score >= 30:
+        voucher_code = 'VOUCHERBAP'
+    elif score >= 20:
+        voucher_code = 'VOUCHER20'
+    elif score >= 10:
+        voucher_code = 'VOUCHER10'
+    else:
+        voucher_code = None
 
-#     if not os.path.exists(DATA_FILE):
-#         return "Không tìm thấy file 'data.csv'. Hãy đảm bảo tệp này có sẵn trong thư mục hiện tại."
+    # Nếu có voucher, lấy voucher từ cơ sở dữ liệu
+    if voucher_code:
+        voucher = get_object_or_404(Voucher, code=voucher_code)
 
-#     df = pd.read_csv(DATA_FILE)
-#     df.columns = df.columns.str.strip()
+        # Tạo UserVoucher nếu người chơi chưa có voucher này
+        user_voucher, created = UserVoucher.objects.get_or_create(
+            nguoi_dung=player.user,
+            voucher=voucher,
+            defaults={'used': False}
+        )
 
-#     # Thực hiện tìm kiếm nếu có
-#     search_query = request.args.get('search')
-#     if search_query:
-#         df = df[df['Phim'].str.contains(search_query, case=False)]
+        if created:
+            reward_message = f"Chúc Mừng Bạn Đã Nhận Thưởng! Tổng điểm: {score}"
+            reward_details = f"Bạn đã nhận: {voucher.voucher_type} - Mã giảm giá: {voucher.code}"
+        else:
+            reward_message = "Voucher này đã được nhận trước đó!"
+            reward_details = f"Bạn đã nhận voucher trước đó: {voucher.code}"
 
-#     # Tạo bảng thống kê
-#     statistics = generate_statistics(df)
+    else:
+        reward_message = "Bạn chưa đủ điểm để nhận thưởng!"
+        reward_details = "Hãy quay lại và chơi để tích lũy điểm."
 
-#     # Chuyển đổi dữ liệu để hiển thị
-#     data_html = df.to_html(classes='table table-striped', index=False)
+    return render(request, 'reward_page.html', {
+        'reward_message': reward_message,
+        'reward_details': reward_details,
+        'voucher_code': voucher_code if voucher_code else None,
+        'voucher_type': voucher.voucher_type if voucher_code else None
+    })
 
-#     # Dữ liệu cho các biểu đồ
-#     revenue_chart = 'revenue_chart.png'
-#     ticket_chart = 'ticket_chart.png'
-#     pie_charts = [f'pie_chart_{i}.png' for i in range(len(df['Phim'].unique()))]
+@login_required
+def game_results(request):
+    player = get_object_or_404(Player, user=request.user)
+    games = Game.objects.filter(player=player).order_by('-id')
 
-#     create_pie_charts(df)
+    total_score = player.score
+    voucher = None
+    if total_score >= 50:
+        voucher = Voucher.objects.filter(voucher_type='combo').first()
+    elif total_score >= 40:
+        voucher = Voucher.objects.filter(voucher_type='drink').first()
+    elif total_score >= 30:
+        voucher = Voucher.objects.filter(voucher_type='popcorn').first()
+    elif total_score >= 20:
+        voucher = Voucher.objects.filter(voucher_type='discount_20').first()
+    elif total_score >= 10:
+        voucher = Voucher.objects.filter(voucher_type='discount_10').first()
 
-#     return render_template('index.html', 
-#                            view_count=view_count, 
-#                            data_html=data_html,
-#                            statistics=statistics,
-#                            revenue_chart=revenue_chart,
-#                            ticket_chart=ticket_chart,
-#                            pie_charts=pie_charts)
+    # Nếu có voucher, tạo UserVoucher mới
+    if voucher:
+        user_voucher, created = UserVoucher.objects.get_or_create(
+            nguoi_dung=player.user,
+            voucher=voucher,
+            defaults={'used': False}
+        )
 
-# # Kiểm tra nếu thư mục static tồn tại, nếu không, tạo thư mục này
-# if not os.path.exists(static_folder):
-#     os.makedirs(static_folder)
+    context = {
+        'player': player,
+        'games': games,
+        'total_score': total_score,
+        'total_games': games.count(),
+        'correct_guesses': sum(game.correct_guesses for game in games),
+        'voucher': voucher if voucher else None,  # Thêm voucher vào context
+        'voucher_created': created if voucher else None  # Thêm trạng thái tạo voucher mới
+    }
 
-# # Chạy ứng dụng
-# if __name__ == '__main__':
-#     initialize_user_data()
-#     app.run(debug=True)
+    return render(request, 'guessart/game_results.html', context)
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import AdVideo, Game
+import random
+
+def get_random_ad(request):
+    try:
+        # Lọc quảng cáo active và cache query
+        active_ads = list(AdVideo.objects.filter(active=True))
+        
+        if not active_ads:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Không có quảng cáo khả dụng'
+            }, status=404)
+            
+        # Chọn quảng cáo ngẫu nhiên
+        ad = random.choice(active_ads)
+        
+        # Log để debug
+        print(f"Selected ad: ID={ad.id}, Title={ad.title}, YouTube_ID={ad.youtube_id}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'youtube_id': ad.youtube_id,
+                'duration': ad.duration,
+                'title': ad.title
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in get_random_ad: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Đã xảy ra lỗi khi tải quảng cáo'
+        }, status=500)
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Game, Player
+from django.http import JsonResponse
+from .models import Game, Player
+@csrf_exempt
+def claim_free_guess(request):
+    if request.method == 'POST':
+        try:
+            # Lấy Player từ request.user
+            player = Player.objects.get(user=request.user)
+
+            # Lấy Game của player này
+            game = Game.objects.get(player=player, is_active=True)
+
+            # Kiểm tra nếu đã xem quảng cáo và cộng thêm lượt chơi
+            if game.ad_bonus_used:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Bạn đã sử dụng quảng cáo để cộng lượt chơi rồi.'
+                }, status=400)
+
+            # Cộng thêm lượt chơi
+            game.remaining_guesses += 1
+            game.ad_bonus_used = True  # Đánh dấu là đã xem quảng cáo
+            game.save()
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Đã thêm 1 lượt chơi!',
+                'remaining_guesses': game.remaining_guesses
+            })
+
+        except Player.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Người chơi không tồn tại.'
+            }, status=404)
+        except Game.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Game không tồn tại hoặc đã kết thúc.'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)

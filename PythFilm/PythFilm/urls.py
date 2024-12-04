@@ -1,24 +1,7 @@
-"""
-URL configuration for PythFilm project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
-from database import views as database
 from database import views  
 
 urlpatterns = [
@@ -52,7 +35,6 @@ urlpatterns = [
     path('rapchieu/sua/<int:id>/', views.sua_rap_chieu, name='sua_rap_chieu'),
     path('rapchieu/xoa/<int:id>/', views.xoa_rap_chieu, name='xoa_rap_chieu'),
     
-    
     # Đường dẫn cho quản lý xuất chiếu
     path('xuatchieu/', views.danh_sach_xuat_chieu, name='danh_sach_xuat_chieu'),
     path('xuatchieu/them/', views.them_xuat_chieu, name='them_xuat_chieu'),
@@ -64,35 +46,29 @@ urlpatterns = [
     path('ve/them/', views.them_ve, name='them_ve'),
     path('ve/sua/<int:id>/', views.sua_ve, name='sua_ve'),
     path('ve/xoa/<int:id>/', views.xoa_ve, name='xoa_ve'),
-
     
-    
-        # Đường dẫn cho quản lý ghế ngồi
+    # Đường dẫn cho quản lý ghế ngồi
     path('ghengoi/', views.danh_sach_ghe_ngoi, name='danh_sach_ghe_ngoi'),
     path('ghengoi/them/', views.them_ghe_ngoi, name='them_ghe_ngoi'),
     path('ghengoi/sua/<int:id>/', views.sua_ghe_ngoi, name='sua_ghe_ngoi'),
     path('ghengoi/xoa/<int:id>/', views.xoa_ghe_ngoi, name='xoa_ghe_ngoi'),
     
+    # Combo Routes
     path('combos/', views.danh_sach_combo, name='danh_sach_combo'),
     path('combos/them/', views.them_combo, name='them_combo'),
     path('combos/sua/<int:id>/', views.sua_combo, name='sua_combo'),
     path('combos/xoa/<int:id>/', views.xoa_combo, name='xoa_combo'),
     
+    # Comment Routes
     path('binh-luan/', views.danh_sach_binh_luan, name='danh_sach_binh_luan'),
     path('binh-luan/them/', views.them_binh_luan, name='them_binh_luan'),
     path('binh-luan/sua/<int:id>/', views.sua_binh_luan, name='sua_binh_luan'),
     path('binh-luan/xoa/<int:id>/', views.xoa_binh_luan, name='xoa_binh_luan'),
     
-    
-    path('binh-luan/', views.danh_sach_binh_luan, name='danh_sach_binh_luan'),
-    path('binh-luan/them/', views.them_binh_luan, name='them_binh_luan'),
-    path('binh-luan/sua/<int:id>/', views.sua_binh_luan, name='sua_binh_luan'),
-    path('binh-luan/xoa/<int:id>/', views.xoa_binh_luan, name='xoa_binh_luan'),
-     
-     
-    # Đường dẫn cho Web quản lý bán vé
+    # Web management for tickets
     path('adminn', views.quan_ly, name='quan_ly'),
     
+    # Main Pages
     path('', views.index, name='index'),
     path('index', views.index, name='index'),
     path('comboselect/', views.select_combo, name='select_combo'),
@@ -104,7 +80,7 @@ urlpatterns = [
     path('checkout/<int:phim_id>/<int:xuat_chieu_id>/<str:ghe_ngoi_ids>/<str:combo_ids>', views.check_out, name='chec_kout'),
     path('ticket_success/<int:ve_id>/', views.ticket_success, name='ticket_success'),
     
-
+    # Authentication Routes
     path('login/', views.login_view, name='login'),
     path('register/', views.register_view, name='register'),
     path('profile/', views.profile_view, name='profile'),
@@ -112,17 +88,31 @@ urlpatterns = [
     path('password/', views.updatePassword, name='password'),
     path('update-user/', views.updateUser, name='update-user'),
     
-    #Contact quan
+    # Contact Routes
     path('contact/', views.contact_view, name='contact'),
     path('lienhe/', views.contact_list, name='danh_sach_lien_he'),
     path('lienhe/sua/<int:pk>/', views.contact_edit, name='sua_lien_he'),
     path('lienhe/xoa/<int:id>/', views.contact_delete, name='xoa_lien_he'),
-    # path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-
+    
+    # Voucher Routes
     path('managevouchers/', views.manage_vouchers, name='managevouchers'),
     path('addvoucher/', views.add_voucher, name='add_voucher'),
-    # path('assignvoucher/', views.assign_voucher_to_user, name='assignvoucher'),
-    
+
+    # Mini Game Routes
+   # Mini Game Routes
+path('game/', views.game_page, name='game_page'),
+path('game/guess/<int:phim_id>/', views.guess_movie, name='guess_movie'),
+path('game/result/', views.guess_result, name='guess_result'),
+path('game/over/', views.guess_game_over, name='guess_game_over'),
+path('reward/', views.reward_page, name='reward_page'),
+path('game_results/', views.game_results, name='game_results'),
+#listminigame
+path('mini-games/', views.mini_game_list, name='mini_game_list'),
+path('mini-game/<int:id>/', views.mini_game_detail, name='game_detail'),
+path('get-random-ad/', views.get_random_ad, name='get_random_ad'),
+path('claim-free-guess/', views.claim_free_guess, name='claim_free_guess'),
+
 ]
+# Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
